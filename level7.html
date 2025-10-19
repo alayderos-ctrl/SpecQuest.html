@@ -236,6 +236,7 @@ if (isMobileDevice()) {
   document.getElementById('mobileControls').style.display = 'flex';
 }
 
+// Controls for touch and mouse
 document.getElementById('leftBtn').addEventListener('touchstart', () => { leftPressed = true; });
 document.getElementById('leftBtn').addEventListener('touchend', () => { leftPressed = false; });
 document.getElementById('rightBtn').addEventListener('touchstart', () => { rightPressed = true; });
@@ -246,6 +247,7 @@ document.getElementById('leftBtn').addEventListener('mouseup', () => { leftPress
 document.getElementById('rightBtn').addEventListener('mousedown', () => { rightPressed = true; });
 document.getElementById('rightBtn').addEventListener('mouseup', () => { rightPressed = false; });
 
+// Keyboard controls
 document.addEventListener('keydown', (e) => {
   if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') leftPressed = true;
   if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') rightPressed = true;
@@ -253,6 +255,17 @@ document.addEventListener('keydown', (e) => {
 document.addEventListener('keyup', (e) => {
   if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') leftPressed = false;
   if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') rightPressed = false;
+});
+
+// Device orientation for tilt
+let tiltX = 0; // range: -90 to 90
+let tiltEnabled = false; // enable after confirming deviceorientation
+
+window.addEventListener('deviceorientation', (event) => {
+  if (event.gamma !== null) {
+    tiltX = event.gamma; // tilt left/right
+    tiltEnabled = true;
+  }
 });
 
 // Particles
@@ -389,9 +402,21 @@ function gameLoop() {
     ctx.drawImage(img, 10 + idx*110, 10, 100, 100);
   });
 
-  // Move catcher
+  // Move catcher based on controls and tilt
   if (leftPressed && catcherX > 0) catcherX -= 5;
   if (rightPressed && catcherX + catcherWidth < canvas.width) catcherX += 5;
+
+  // Apply tilt if enabled
+  if (tiltEnabled) {
+    // Adjust catcherX based on gamma (tiltX)
+    // Sensitivity factor
+    const sensitivity = 0.5;
+    catcherX += tiltX * sensitivity;
+    // Keep within bounds
+    if (catcherX < 0) catcherX = 0;
+    if (catcherX + catcherWidth > canvas.width) catcherX = canvas.width - catcherWidth;
+  }
+
   ctx.drawImage(catcherImage, catcherX, catcherY, catcherWidth, catcherHeight);
 
   // Update and draw items
