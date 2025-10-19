@@ -2,405 +2,458 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Electromagnetic Waves Matching Game</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Scientists Matching Game</title>
 <style>
   body {
-    font-family: 'Arial Rounded MT Bold', cursive, sans-serif;
-    background: linear-gradient(135deg, #89f7fe, #66a6ff);
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: linear-gradient(135deg, #1e1e2f, #2a2a3f);
+    color: #fff;
     margin: 0;
     padding: 20px;
-    color: #333;
-  }
-
-  h1 {
-    text-align: center;
-    color: #004d40;
-    margin-bottom: 10px;
-    font-size: 1.8em;
-  }
-
-  /* Score display styling */
-  .score-container {
-    text-align: center;
-    font-size: 1.5em;
-    margin-bottom: 10px;
-    font-weight: bold;
-  }
-
-  /* Timer display styling */
-  .timer-container {
-    text-align: center;
-    font-size: 1.5em;
-    margin-bottom: 10px;
-    font-weight: bold;
-  }
-
-  .container {
     display: flex;
-    flex-wrap: wrap; /* Allow wrapping to multiple lines */
-    justify-content: center;
-    gap: 20px;
-    max-width: 70%; /* Reduced from 1200px to 70% of parent/container */
-    margin: 0 auto;
+    flex-direction: column;
+    align-items: center;
+    overflow: hidden; /* To contain particles */
   }
-
-  /* Draggable waves section */
-  .waves {
-    width: 45%; /* Adjust width for two containers per row */
-    min-width: 250px;
-  }
-
-  .waves h2 {
-    text-align: center;
-    color: #006064;
+  h1 {
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.7);
+    font-size: 2.5em;
     margin-bottom: 10px;
-    font-size: 1.5em;
+    position: relative;
+    z-index: 1;
   }
-
-  .wave-draggable {
-    background-color: #80deea;
-    padding: 12px;
-    margin: 8px 0;
-    border-radius: 10px;
-    box-shadow: 0 3px 6px rgba(0,0,0,0.15);
-    cursor: pointer;
+  #score, #message, #timer {
+    font-size: 1.3em;
+    margin-top: 10px;
+    text-shadow: 1px 1px 3px rgba(0,0,0,0.5);
+    position: relative;
+    z-index: 1;
+  }
+  #timer {
     font-weight: bold;
+  }
+  #game-container {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin-top: 20px;
+    max-width: 1200px;
+    width: 100%;
+    position: relative;
+    z-index: 1;
+  }
+  /* Card styles with enhanced visuals */
+  .card {
+    width: 200px;
+    height: 250px;
+    margin: 10px;
+    perspective: 1500px;
+    cursor: pointer;
+    box-shadow: 0 8px 16px rgba(0,0,0,0.3);
+    border-radius: 12px;
+    transition: transform 0.3s, box-shadow 0.3s;
+    position: relative;
+    z-index: 1;
+  }
+  .card:hover {
+    transform: scale(1.05);
+    box-shadow: 0 12px 24px rgba(0,0,0,0.4);
+  }
+  .card-inner {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    text-align: center;
+    transition: transform 0.8s;
+    transform-style: preserve-3d;
+    border-radius: 12px;
+  }
+  /* When flipped, rotate to show back */
+  .card.flipped .card-inner {
+    transform: rotateY(180deg);
+  }
+  /* Front side styles */
+  .card-front {
+    background: linear-gradient(145deg, #444, #222);
+    display: flex;
+    flex-direction: column; /* Stack image and name */
+    align-items: center;
+    justify-content: center;
+    padding: 10px;
+    box-shadow: inset 0 0 10px rgba(0,0,0,0.5);
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    backface-visibility: hidden;
+    border-radius: 12px;
+  }
+
+  /* Show the placeholder text on the front */
+  .placeholder {
+    font-size: 1.2em;
+    padding: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+  }
+
+  /* Style for the name below the image */
+  .scientist-name {
+    margin-top: 10px; /* Adjust vertical position */
+    font-weight: bold;
+    font-size: 1.1em;
+    text-align: center;
+  }
+  /* Back side styles */
+  .card-back {
+    background-color: #666;
+    transform: rotateY(180deg);
+    padding: 20px;
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     font-size: 1em;
-    text-align: center;
-    user-select: none;
-    transition: background-color 0.2s, transform 0.2s, border 0.2s;
+    line-height: 1.4;
+    color: #fff;
+    font-family: 'Arial Rounded MT Bold', 'Helvetica Rounded', Arial, sans-serif;
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    backface-visibility: hidden;
+    border-radius: 12px;
+    flex-direction: column;
+  }
+  /* Style for the image on the back side */
+  .card-back img {
+    max-width: 180px;
+    max-height: 180px;
+    border-radius: 15px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+    margin-bottom: 15px;
   }
 
-  .wave-draggable:hover {
-    background-color: #4dd0e1;
-    transform: scale(1.02);
+  /* Canvas for particles */
+  #particle-canvas {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 0; /* Behind all content */
+    pointer-events: none; /* Allow clicks to pass through */
   }
 
-  /* Selected wave border style */
-  .selected {
-    border: 3px solid #004d40;
-  }
-
-  /* Descriptions / drop zones */
-  .descriptions {
-    width: 45%;
-    min-width: 250px;
-  }
-
-  .descriptions h2 {
-    text-align: center;
-    color: #006064;
-    margin-bottom: 10px;
-    font-size: 1.5em;
-  }
-
-  .desc-box {
-    border: 3px dashed #006064;
-    background-color: #b2ebf2;
-    padding: 12px;
-    margin: 8px 0;
-    border-radius: 8px;
-    min-height: 70px;
+  /* Overlay styles for countdown and instructions */
+  #overlay {
+    position: fixed;
+    top:0; left:0; right:0; bottom:0;
+    background: rgba(0,0,0,0.8);
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    transition: background-color 0.2s, border-color 0.2s;
-    cursor: pointer;
-    position: relative;
-    text-align: center;
-  }
-
-  /* Style for placeholder text inside description boxes */
-  .placeholder {
-    font-style: italic;
-    color: #555;
-    margin-top: 5px;
-  }
-
-  .desc-box.drag-over {
-    background-color: #80deea;
-    border-color: #004d40;
-  }
-
-  /* Feedback styling */
-  .feedback {
-    margin-top: 10px;
-    font-size: 1.2em;
-    text-align: center;
-    height: 24px;
-    font-weight: bold;
-  }
-
-  .correct {
-    color: green;
-  }
-
-  .incorrect {
-    color: red;
-  }
-
-  /* Button styling */
-  button {
-    display: block;
-    margin: 30px auto;
-    padding: 12px 24px;
-    font-size: 1.2em;
-    background-color: #006064;
+    font-size: 3em;
     color: #fff;
-    border: none;
-    border-radius: 12px;
-    cursor: pointer;
-    transition: background-color 0.2s;
+    z-index: 9999;
+    text-align: center;
   }
-
-  button:hover {
-    background-color: #004d40;
-  }
-
-  @media(max-width: 768px) {
-    .container {
-      flex-direction: column;
-      align-items: center;
-    }
-    .waves, .descriptions {
-      width: 80%; /* Make full width on small screens */
-    }
+  #overlay.hidden {
+    display: none;
   }
 </style>
 </head>
 <body>
 
-<h1>Match Electromagnetic Waves with Their Applications</h1>
+<!-- Canvas for floating particles -->
+<canvas id="particle-canvas"></canvas>
 
-<!-- Score display -->
-<div class="score-container">
-  Score: <span id="score">0</span>
+<!-- Overlay for countdown and instructions -->
+<div id="overlay">
+  <div id="countdown"></div>
+  <div id="instructions" style="font-size:1.5em; margin-top:20px;">Match each scientist with their description. Click to flip cards and find pairs!</div>
 </div>
 
-<!-- Timer display -->
-<div class="timer-container">
-  Time Remaining: <span id="timer">30</span> seconds
-</div>
-
-<div class="container">
-  <!-- Waves Section -->
-  <div class="waves">
-    <h2>Waves</h2>
-    <div id="wave1" class="wave-draggable">Radio Waves</div>
-    <div id="wave2" class="wave-draggable">Microwaves</div>
-    <div id="wave3" class="wave-draggable">Infrared</div>
-    <div id="wave4" class="wave-draggable">Visible Light</div>
-    <div id="wave5" class="wave-draggable">Ultraviolet</div>
-    <div id="wave6" class="wave-draggable">X-Rays</div>
-    <div id="wave7" class="wave-draggable">Gamma Rays</div>
-  </div>
-
-  <!-- Descriptions -->
-  <div class="descriptions">
-    <h2>Applications / Descriptions</h2>
-    <div class="desc-box" data-answer="Radio Waves">
-      <strong>Uses in broadcasting & communication</strong>
-    </div>
-    <div class="desc-box" data-answer="Microwaves">
-      <strong>Satellite communication, Radar, Microwave ovens</strong>
-    </div>
-    <div class="desc-box" data-answer="Infrared">
-      <strong>Remote controls, Night vision, Thermal imaging</strong>
-    </div>
-    <div class="desc-box" data-answer="Visible Light">
-      <strong>Lighting, Photography, Phototherapy</strong>
-    </div>
-    <div class="desc-box" data-answer="Ultraviolet">
-      <strong>Sterilization, Fluorescent detection</strong>
-    </div>
-    <div class="desc-box" data-answer="X-Rays">
-      <strong>Medical imaging, Industry inspections</strong>
-    </div>
-    <div class="desc-box" data-answer="Gamma Rays">
-      <strong>Cancer treatment, Sterilization</strong>
-    </div>
-  </div>
-</div>
-
-<button onclick="checkAnswers()">Check Answers</button>
+<h1>Scientists Matching Game</h1>
+<div id="score">Score: 0</div>
+<div id="message"></div>
+<div id="timer">Time: 02:00</div>
+<div id="game-container"></div>
 
 <script>
-  // Retrieve score from URL parameter for inheritance
-  const passedScore = new URLSearchParams(window.location.search).get('score');
-  let score = 0;
-  if (passedScore !== null) {
-    score = parseInt(passedScore, 10);
+const scientists = [
+  {
+    name: "Andre-Marie Ampere",
+    image: "https://i.pinimg.com/736x/87/77/3d/87773d96fa1e15d6e19aeed2434baccb.jpg",
+    description: "Contributed in developing equations that showed the relationship of electricity and magnetism."
+  },
+  {
+    name: "Michael Faraday",
+    image: "https://i.pinimg.com/736x/67/f9/15/67f915a4d03bf750c86d799a08e913bc.jpg",
+    description: "Showed experimental evidence of electromagnetic waves and their link to light."
+  },
+  {
+    name: "Heinrich Hertz",
+    image: "https://i.pinimg.com/736x/c3/79/85/c379855f48beb9565ef2c87e2318eda0.jpg",
+    description: "Demonstrated the magnetic effect based on the direction of current."
+  },
+  {
+    name: "James Clerk Maxwell",
+    image: "https://i.pinimg.com/736x/2e/10/b6/2e10b6ab47b033c14fb394328d1290dd.jpg",
+    description: "Formulated the principle behind electromagnetic induction."
+  },
+  {
+    name: "Hans Christian Oersted",
+    image: "https://i.pinimg.com/736x/73/17/d5/7317d58bfec25c057b54b5c81746e9c9.jpg",
+    description: "Showed how a current carrying wire behaves like a magnet."
   }
+];
 
-  // Initialize score display
-  document.addEventListener('DOMContentLoaded', () => {
-    document.getElementById('score').textContent = score;
-    startTimer();
+const descriptions = [
+  "Contributed in developing equations that showed the relationship of electricity and magnetism.",
+  "Showed experimental evidence of electromagnetic waves and their link to light.",
+  "Demonstrated the magnetic effect based on the direction of current.",
+  "Formulated the principle behind electromagnetic induction.",
+  "Showed how a current carrying wire behaves like a magnet."
+];
 
-    // Event listeners for waves
-    document.querySelectorAll('.wave-draggable').forEach(wave => {
-      wave.addEventListener('click', () => selectWave(wave.id));
-      wave.addEventListener('touchstart', () => {
-        selectWave(wave.id);
-      });
+// --- Part 1: Inherit score from URL parameter 'level11score' ---
+const passedScore = new URLSearchParams(window.location.search).get('level11score');
+let score = 0;
+if (passedScore !== null && !isNaN(parseInt(passedScore, 10))) {
+  score = parseInt(passedScore, 10);
+}
+const scoreDisplay = document.getElementById('score');
+scoreDisplay.textContent = 'Score: ' + score;
+
+let firstCard = null;
+let secondCard = null;
+
+const gameContainer = document.getElementById('game-container');
+const messageDisplay = document.getElementById('message');
+const timerDisplay = document.getElementById('timer');
+
+let totalSeconds = 120; 
+let timerInterval = null;
+
+const overlay = document.getElementById('overlay');
+const countdownEl = document.getElementById('countdown');
+
+// --- Countdown from 3 ---
+function startCountdown() {
+  let count = 3;
+  countdownEl.textContent = count;
+  const countdownInterval = setInterval(() => {
+    count--;
+    if (count > 0) {
+      countdownEl.textContent = count;
+    } else {
+      clearInterval(countdownInterval);
+      overlay.classList.add('hidden');
+      startGame();
+    }
+  }, 1000);
+}
+
+// --- Start the game after countdown ---
+function startGame() {
+  startTimer();
+  createCards();
+}
+
+// --- Timer ---
+function startTimer() {
+  updateTimerDisplay();
+  timerInterval = setInterval(() => {
+    totalSeconds--;
+    updateTimerDisplay();
+    if (totalSeconds <= 0) {
+      clearInterval(timerInterval);
+      alert('Time is up! Game over.');
+    }
+  }, 1000);
+}
+function updateTimerDisplay() {
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  document.getElementById('timer').textContent = `Time: ${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+}
+
+// --- Create cards ---
+function createCards() {
+  let cardsData = [];
+  scientists.forEach((scientist, index) => {
+    // Scientist card
+    cardsData.push({
+      id: 'scientist-' + index,
+      type: 'scientist',
+      content: scientist.name,
+      associated: index
     });
-
-    // Event listeners for description boxes
-    document.querySelectorAll('.desc-box').forEach(zone => {
-      zone.addEventListener('click', () => assignWaveToDrop(zone.dataset.answer));
-      zone.addEventListener('touchstart', () => {
-        assignWaveToDrop(zone.dataset.answer);
-      });
+    // Description card
+    cardsData.push({
+      id: 'desc-' + index,
+      type: 'description',
+      content: descriptions[index],
+      associated: index
     });
   });
+  // Shuffle
+  cardsData = cardsData.sort(() => Math.random() - 0.5);
 
-  let selectedWaveId = null;
-  const totalQuestions = document.querySelectorAll('.desc-box').length;
+  // Generate DOM elements
+  cardsData.forEach(cardData => {
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.dataset.id = cardData.id;
+    card.dataset.type = cardData.type;
+    card.dataset.associated = cardData.associated;
 
-  // Timer variables
-  let timeRemaining = 30; // seconds
-  let timerInterval = null;
+    const cardInner = document.createElement('div');
+    cardInner.className = 'card-inner';
 
-  // Start the timer
-  function startTimer() {
-    document.getElementById('timer').textContent = timeRemaining;
-    timerInterval = setInterval(() => {
-      timeRemaining--;
-      document.getElementById('timer').textContent = timeRemaining;
-      if (timeRemaining <= 0) {
-        clearInterval(timerInterval);
-        checkAnswers();
+    const cardFront = document.createElement('div');
+    cardFront.className = 'card-front';
+    const placeholder = document.createElement('div');
+    placeholder.className = 'placeholder';
+    placeholder.innerHTML = '<strong>Match me!</strong>';
+    cardFront.appendChild(placeholder);
+
+    const cardBack = document.createElement('div');
+    cardBack.className = 'card-back';
+    if (cardData.type === 'scientist') {
+      const img = document.createElement('img');
+      img.src = scientists[cardData.associated].image;
+      img.alt = scientists[cardData.associated].name;
+      cardBack.appendChild(img);
+    }
+    cardBack.innerHTML += '<p>' + cardData.content + '</p>';
+
+    cardInner.appendChild(cardFront);
+    cardInner.appendChild(cardBack);
+    card.appendChild(cardInner);
+
+    // Flip logic
+    card.addEventListener('click', () => {
+      if (
+        card.classList.contains('flipped') || 
+        (firstCard && secondCard) || 
+        (totalSeconds <= 0)
+      ) {
+        return;
       }
-    }, 1000);
-  }
-
-  function selectWave(waveId) {
-    if (selectedWaveId) {
-      document.getElementById(selectedWaveId).classList.remove('selected');
-    }
-    selectedWaveId = waveId;
-    document.getElementById(waveId).classList.add('selected');
-  }
-
-  function assignWaveToDrop(descriptionText) {
-    if (!selectedWaveId) {
-      alert("Please select a wave first by tapping on it.");
-      return;
-    }
-
-    const waveEl = document.getElementById(selectedWaveId);
-    const dropZones = document.querySelectorAll('.desc-box');
-
-    let assigned = false;
-
-    dropZones.forEach(zone => {
-      if (zone.dataset.answer === descriptionText.trim()) {
-        // Remove existing placed wave if any
-        const existingWave = zone.querySelector('.placed-wave');
-        if (existingWave) {
-          const prevWaveId = existingWave.dataset.waveId;
-          const prevWaveEl = document.getElementById(prevWaveId);
-          if (prevWaveEl) {
-            prevWaveEl.style.display = "block"; // restore original wave
-          }
-          zone.removeChild(existingWave);
-        }
-
-        // Hide the selected wave
-        waveEl.style.display = "none";
-
-        // Create placed wave element
-        const placedWave = document.createElement('div');
-        placedWave.textContent = waveEl.textContent;
-        placedWave.className = 'placed-wave';
-        placedWave.dataset.waveId = waveEl.id;
-
-        // Add remove button
-        const removeBtn = document.createElement('button');
-        removeBtn.textContent = "Remove";
-        removeBtn.style.marginLeft = "10px";
-        removeBtn.onclick = () => {
-          zone.removeChild(placedWave);
-          waveEl.style.display = "block";
-        };
-        placedWave.appendChild(removeBtn);
-
-        zone.appendChild(placedWave);
-        assigned = true;
-      }
-    });
-
-    if (!assigned) {
-      alert("Please tap on the correct description to assign the wave.");
-    }
-
-    // Clear selection
-    if (selectedWaveId) {
-      document.getElementById(selectedWaveId).classList.remove('selected');
-    }
-    selectedWaveId = null;
-  }
-
-  function checkAnswers() {
-    const zones = document.querySelectorAll('.desc-box');
-
-    let correctCount = 0;
-
-    // Check each zone
-    zones.forEach(zone => {
-      const answer = zone.dataset.answer;
-      const placedWaveDiv = zone.querySelector('.placed-wave');
-      if (placedWaveDiv) {
-        const waveText = placedWaveDiv.firstChild.textContent.trim();
-        if (waveText === answer) {
-          zone.style.backgroundColor = "#A5D6A7"; // green
-          correctCount++;
-        } else {
-          zone.style.backgroundColor = "#EF9A9A"; // red
-        }
+      card.classList.add('flipped');
+      if (!firstCard) {
+        firstCard = card;
       } else {
-        zone.style.backgroundColor = "#b2ebf2"; // default
+        secondCard = card;
+        checkMatch();
       }
     });
+    document.getElementById('game-container').appendChild(card);
+  });
+}
 
-    // Assign points based on correct count
-    let points = 0;
-    if (correctCount >= 6) {
-      points = 3;
-    } else if (correctCount >= 4) {
-      points = 2;
-    } else if (correctCount >= 2) {
-      points = 1;
-    } else {
-      points = 0;
-    }
-
-    // Add points to total score
-    score += points;
-
-    // Save score in URL for inheritance
+function checkMatch() {
+  const isMatch = 
+    firstCard.dataset.associated === secondCard.dataset.associated &&
+    firstCard.dataset.type !== secondCard.dataset.type;
+  if (isMatch) {
+    score++;
+    scoreDisplay.textContent = 'Score: ' + score;
+    // Save score to URL with 'level11score' parameter
     const currentUrl = new URL(window.location.href);
-    currentUrl.searchParams.set('score', score);
+    currentUrl.searchParams.set('level11score', score);
     window.history.replaceState({}, '', currentUrl.toString());
 
-    // Update display
-    document.getElementById('score').textContent = score;
+    document.getElementById('message').textContent = 'Correct Match!';
+    firstCard = null;
+    secondCard = null;
 
-    // Determine if all answers are correct
-    if (correctCount === zones.length) {
-      // All correct, redirect immediately after 1 second
+    // Check if all cards are matched
+    if (document.querySelectorAll('.card:not(.flipped)').length === 0) {
+      clearInterval(timerInterval);
+      // Wait before redirecting
       setTimeout(() => {
-        window.location.href = 'level12.html?score=' + score;
-      }, 1000);
-    } else {
-      // Not all correct, still redirect after 1 second
-      setTimeout(() => {
-        window.location.href = 'level12.html?score=' + score;
+        // Redirect to level13.html passing the score with 'level11score'
+        window.location.href = 'level13.html?level11score=' + score;
       }, 1000);
     }
+  } else {
+    document.getElementById('message').textContent = 'Try Again!';
+    setTimeout(() => {
+      firstCard.classList.remove('flipped');
+      secondCard.classList.remove('flipped');
+      firstCard = null;
+      secondCard = null;
+      document.getElementById('message').textContent = '';
+    }, 1000);
   }
+}
+
+// --- Particles setup ---
+const canvas = document.getElementById('particle-canvas');
+const ctx = canvas.getContext('2d');
+
+let particles = [];
+
+function resizeCanvas() {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+}
+window.addEventListener('resize', resizeCanvas);
+resizeCanvas();
+
+class Particle {
+  constructor() {
+    this.reset();
+  }
+  reset() {
+    this.x = Math.random() * window.innerWidth;
+    this.y = Math.random() * window.innerHeight;
+    this.vx = (Math.random() - 0.5) * 0.5;
+    this.vy = (Math.random() - 0.5) * 0.5;
+    this.size = Math.random() * 2 + 1;
+    this.alpha = Math.random() * 0.5 + 0.5;
+  }
+  update() {
+    this.x += this.vx;
+    this.y += this.vy;
+    if (this.x < 0 || this.x > window.innerWidth) {
+      this.vx *= -1;
+    }
+    if (this.y < 0 || this.y > window.innerHeight) {
+      this.vy *= -1;
+    }
+  }
+  draw() {
+    ctx.globalAlpha = this.alpha;
+    ctx.fillStyle = '#fff';
+    ctx.beginPath();
+    ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+    ctx.fill();
+  }
+}
+
+for (let i = 0; i < 100; i++) {
+  particles.push(new Particle());
+}
+
+function animate() {
+  ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
+  for (const p of particles) {
+    p.update();
+    p.draw();
+  }
+  requestAnimationFrame(animate);
+}
+animate();
+
+// Kick off the countdown
+startCountdown();
+
 </script>
 </body>
 </html>
