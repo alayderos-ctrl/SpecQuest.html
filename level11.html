@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Electromagnetic Waves Matching Game</title>
+<style>
+  body {
+    font-family: 'Arial Rounded MT Bold', cursive, sans-serif;
+    background: linear-gradient(135deg, #89f7fe, #66a6ff);
+    margin: 0;
+    padding: 20px;
+    color: #333;
+  }
+
+  h1 {
+    text-align: center;
+    color: #004d40;
+    margin-bottom: 10px;
+    font-size: 1.8em;
+  }
+
+  /* Score display styling */
+  .score-container {
+    text-align: center;
+    font-size: 1.5em;
+    margin-bottom: 10px;
+    font-weight: bold;
+  }
+
+  /* Timer display styling */
+  .timer-container {
+    text-align: center;
+    font-size: 1.5em;
+    margin-bottom: 10px;
+    font-weight: bold;
+  }
+
+  .container {
+    display: flex;
+    flex-wrap: wrap; /* Allow wrapping to multiple lines */
+    justify-content: center;
+    gap: 20px;
+    max-width: 70%; /* Reduced from 1200px to 70% of parent/container */
+    margin: 0 auto;
+  }
+
+  /* Draggable waves section */
+  .waves {
+    width: 45%; /* Adjust width for two containers per row */
+    min-width: 250px;
+  }
+
+  .waves h2 {
+    text-align: center;
+    color: #006064;
+    margin-bottom: 10px;
+    font-size: 1.5em;
+  }
+
+  .wave-draggable {
+    background-color: #80deea;
+    padding: 12px;
+    margin: 8px 0;
+    border-radius: 10px;
+    box-shadow: 0 3px 6px rgba(0,0,0,0.15);
+    cursor: pointer;
+    font-weight: bold;
+    font-size: 1em;
+    text-align: center;
+    user-select: none;
+    transition: background-color 0.2s, transform 0.2s, border 0.2s;
+  }
+
+  .wave-draggable:hover {
+    background-color: #4dd0e1;
+    transform: scale(1.02);
+  }
+
+  /* Selected wave border style */
+  .selected {
+    border: 3px solid #004d40;
+  }
+
+  /* Descriptions / drop zones */
+  .descriptions {
+    width: 45%;
+    min-width: 250px;
+  }
+
+  .descriptions h2 {
+    text-align: center;
+    color: #006064;
+    margin-bottom: 10px;
+    font-size: 1.5em;
+  }
+
+  .desc-box {
+    border: 3px dashed #006064;
+    background-color: #b2ebf2;
+    padding: 12px;
+    margin: 8px 0;
+    border-radius: 8px;
+    min-height: 70px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.2s, border-color 0.2s;
+    cursor: pointer;
+    position: relative;
+    text-align: center;
+  }
+
+  /* Style for placeholder text inside description boxes */
+  .placeholder {
+    font-style: italic;
+    color: #555;
+    margin-top: 5px;
+  }
+
+  .desc-box.drag-over {
+    background-color: #80deea;
+    border-color: #004d40;
+  }
+
+  /* Feedback styling */
+  .feedback {
+    margin-top: 10px;
+    font-size: 1.2em;
+    text-align: center;
+    height: 24px;
+    font-weight: bold;
+  }
+
+  .correct {
+    color: green;
+  }
+
+  .incorrect {
+    color: red;
+  }
+
+  /* Button styling */
+  button {
+    display: block;
+    margin: 30px auto;
+    padding: 12px 24px;
+    font-size: 1.2em;
+    background-color: #006064;
+    color: #fff;
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+  }
+
+  button:hover {
+    background-color: #004d40;
+  }
+
+  @media(max-width: 768px) {
+    .container {
+      flex-direction: column;
+      align-items: center;
+    }
+    .waves, .descriptions {
+      width: 80%; /* Make full width on small screens */
+    }
+  }
+</style>
+</head>
+<body>
+
+<h1>Match Electromagnetic Waves with Their Applications</h1>
+
+<!-- Score display -->
+<div class="score-container">
+  Score: <span id="score">0</span>
+</div>
+
+<!-- Timer display -->
+<div class="timer-container">
+  Time Remaining: <span id="timer">30</span> seconds
+</div>
+
+<div class="container">
+  <!-- Waves Section -->
+  <div class="waves">
+    <h2>Waves</h2>
+    <div id="wave1" class="wave-draggable">Radio Waves</div>
+    <div id="wave2" class="wave-draggable">Microwaves</div>
+    <div id="wave3" class="wave-draggable">Infrared</div>
+    <div id="wave4" class="wave-draggable">Visible Light</div>
+    <div id="wave5" class="wave-draggable">Ultraviolet</div>
+    <div id="wave6" class="wave-draggable">X-Rays</div>
+    <div id="wave7" class="wave-draggable">Gamma Rays</div>
+  </div>
+
+  <!-- Descriptions -->
+  <div class="descriptions">
+    <h2>Applications / Descriptions</h2>
+    <div class="desc-box" data-answer="Radio Waves">
+      <strong>Uses in broadcasting & communication</strong>
+    </div>
+    <div class="desc-box" data-answer="Microwaves">
+      <strong>Satellite communication, Radar, Microwave ovens</strong>
+    </div>
+    <div class="desc-box" data-answer="Infrared">
+      <strong>Remote controls, Night vision, Thermal imaging</strong>
+    </div>
+    <div class="desc-box" data-answer="Visible Light">
+      <strong>Lighting, Photography, Phototherapy</strong>
+    </div>
+    <div class="desc-box" data-answer="Ultraviolet">
+      <strong>Sterilization, Fluorescent detection</strong>
+    </div>
+    <div class="desc-box" data-answer="X-Rays">
+      <strong>Medical imaging, Industry inspections</strong>
+    </div>
+    <div class="desc-box" data-answer="Gamma Rays">
+      <strong>Cancer treatment, Sterilization</strong>
+    </div>
+  </div>
+</div>
+
+<button onclick="checkAnswers()">Check Answers</button>
+
+<script>
+  // Retrieve score from URL parameter for inheritance
+  const passedScore = new URLSearchParams(window.location.search).get('score');
+  let score = 0;
+  if (passedScore !== null) {
+    score = parseInt(passedScore, 10);
+  }
+
+  let selectedWaveId = null;
+  const totalQuestions = document.querySelectorAll('.desc-box').length;
+
+  // Timer variables
+  let timeRemaining = 30; // seconds
+  let timerInterval = null;
+
+  // Start the timer
+  function startTimer() {
+    document.getElementById('timer').textContent = timeRemaining;
+    timerInterval = setInterval(() => {
+      timeRemaining--;
+      document.getElementById('timer').textContent = timeRemaining;
+      if (timeRemaining <= 0) {
+        clearInterval(timerInterval);
+        alert("Time's up!");
+        checkAnswers();
+      }
+    }, 1000);
+  }
+
+  // Initialize everything on DOM load
+  document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('score').textContent = score;
+    startTimer();
+
+    // Event listeners for waves
+    document.querySelectorAll('.wave-draggable').forEach(wave => {
+      wave.addEventListener('click', () => selectWave(wave.id));
+      wave.addEventListener('touchstart', () => {
+        selectWave(wave.id);
+      });
+    });
+
+    // Event listeners for description boxes
+    document.querySelectorAll('.desc-box').forEach(zone => {
+      zone.addEventListener('click', () => assignWaveToDrop(zone.dataset.answer));
+      zone.addEventListener('touchstart', () => {
+        assignWaveToDrop(zone.dataset.answer);
+      });
+    });
+  });
+
+  function selectWave(waveId) {
+    if (selectedWaveId) {
+      document.getElementById(selectedWaveId).classList.remove('selected');
+    }
+    selectedWaveId = waveId;
+    document.getElementById(waveId).classList.add('selected');
+  }
+
+  function assignWaveToDrop(descriptionText) {
+    if (!selectedWaveId) {
+      alert("Please select a wave first by tapping on it.");
+      return;
+    }
+
+    const waveEl = document.getElementById(selectedWaveId);
+    const dropZones = document.querySelectorAll('.desc-box');
+
+    let assigned = false;
+
+    dropZones.forEach(zone => {
+      if (zone.dataset.answer === descriptionText.trim()) {
+        // Remove existing placed wave if any
+        const existingWave = zone.querySelector('.placed-wave');
+        if (existingWave) {
+          const prevWaveId = existingWave.dataset.waveId;
+          const prevWaveEl = document.getElementById(prevWaveId);
+          if (prevWaveEl) {
+            prevWaveEl.style.display = "block"; // restore original wave
+          }
+          zone.removeChild(existingWave);
+        }
+
+        // Hide the selected wave
+        waveEl.style.display = "none";
+
+        // Create placed wave element
+        const placedWave = document.createElement('div');
+        placedWave.textContent = waveEl.textContent;
+        placedWave.className = 'placed-wave';
+        placedWave.dataset.waveId = waveEl.id;
+
+        // Add remove button
+        const removeBtn = document.createElement('button');
+        removeBtn.textContent = "Remove";
+        removeBtn.style.marginLeft = "10px";
+        removeBtn.onclick = () => {
+          zone.removeChild(placedWave);
+          waveEl.style.display = "block"; // restore wave
+        };
+        placedWave.appendChild(removeBtn);
+
+        zone.appendChild(placedWave);
+        assigned = true;
+      }
+    });
+
+    if (!assigned) {
+      alert("Please tap on the correct description to assign the wave.");
+    }
+
+    // Clear selection
+    if (selectedWaveId) {
+      document.getElementById(selectedWaveId).classList.remove('selected');
+    }
+    selectedWaveId = null;
+  }
+
+  function checkAnswers() {
+    const zones = document.querySelectorAll('.desc-box');
+
+    // Reset score before checking
+    score = 0;
+
+    zones.forEach(zone => {
+      const answer = zone.dataset.answer;
+      const placedWaveDiv = zone.querySelector('.placed-wave');
+      if (placedWaveDiv) {
+        const waveText = placedWaveDiv.firstChild.textContent.trim();
+        if (waveText === answer) {
+          zone.style.backgroundColor = "#A5D6A7"; // green
+          score++;
+        } else {
+          zone.style.backgroundColor = "#EF9A9A"; // red
+        }
+      } else {
+        zone.style.backgroundColor = "#b2ebf2"; // default
+      }
+    });
+
+    // Save the score to URL parameter for inheritance later
+    const currentUrl = new URL(window.location.href);
+    currentUrl.searchParams.set('score', score);
+    window.history.replaceState({}, '', currentUrl.toString());
+
+    // Update display
+    document.getElementById('score').textContent = score;
+
+    if (score === zones.length) {
+      alert("Great job! All answers are correct!");
+      // Redirect to next level with score in URL
+      // Replace 'nextlevel.html' with your actual next level URL
+      window.location.href = 'level12.html?score=' + score;
+    }
+  }
+</script>
+</body>
+</html>

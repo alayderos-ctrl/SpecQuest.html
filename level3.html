@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Level 3 - Reflection Question</title>
+<style>
+  /* Your existing styles ... (unchanged) */
+  body {
+    font-family: Arial, sans-serif;
+    background: #222;
+    color: #fff;
+    margin: 0;
+    padding: 20px;
+    position: relative;
+  }
+  h2 {
+    text-align: center;
+  }
+  .question {
+    margin-top: 30px;
+    font-size: 1.2em;
+    text-align: center;
+  }
+  .choices {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin-top: 20px;
+  }
+  .choice {
+    background: #444;
+    margin: 10px;
+    padding: 15px 20px;
+    border-radius: 8px;
+    cursor: pointer;
+    min-width: 150px;
+    text-align: center;
+    transition: background 0.3s, transform 0.3s;
+  }
+  .choice:hover {
+    background: #666;
+    transform: scale(1.05);
+  }
+  #graphicContainer {
+    margin-top: 30px;
+    text-align: center;
+  }
+  canvas {
+    background: #000;
+    border: 2px solid #fff;
+  }
+  #checkBtn {
+    display: block;
+    margin: 20px auto;
+    padding: 10px 20px;
+    font-size: 1em;
+    border: none;
+    border-radius: 5px;
+    background: #0a84ff;
+    color: #fff;
+    cursor: pointer;
+  }
+  #result {
+    text-align: center;
+    font-size: 1.2em;
+    margin-top: 10px;
+  }
+  /* Trivia section styles */
+  #triviaSection {
+    margin-top: 30px;
+    background: #333;
+    padding: 15px;
+    border-radius: 8px;
+    max-width: 700px;
+    margin-left: auto;
+    margin-right: auto;
+    display: none;
+  }
+  #triviaSection h3 {
+    margin-top: 0;
+    text-align: center;
+  }
+  #triviaContent {
+    margin-top: 10px;
+    font-size: 1em;
+  }
+  /* Score display style */
+  #scoreDisplay {
+    text-align: center; 
+    margin-top: 20px; 
+    font-size: 1.2em;
+  }
+</style>
+</head>
+<body>
+
+<h2>What is reflection in terms of light?</h2>
+<div class="question">
+  Select the correct explanation:
+</div>
+<div class="choices">
+  <div class="choice" data-choice="absorbing">Absorbing</div>
+  <div class="choice" data-choice="bouncing">Bouncing</div>
+  <div class="choice" data-choice="bending">Bending</div>
+  <div class="choice" data-choice="splitting">Splitting</div>
+</div>
+
+<button id="checkBtn" disabled>Check Answer</button>
+<div id="result"></div>
+
+<!-- Score display -->
+<div id="scoreDisplay">Score: 0</div>
+
+<!-- Trivia Section -->
+<div id="triviaSection">
+  <h3>Trivia about Reflection</h3>
+  <div id="triviaContent">
+    Reflection occurs when light bounces off surfaces like mirrors, water, or smooth objects. It follows the law of reflection: the angle of incidence equals the angle of reflection. Reflection is used in various optical devices, periscopes, and even in designing solar panels.
+  </div>
+</div>
+
+<div id="graphicContainer">
+  <canvas id="reflectionCanvas" width="600" height="400"></canvas>
+</div>
+
+<script>
+/* Level 4 parameters for adaptation in level 5 */
+const level4Params = {
+  // Example parameters - you can expand this object as needed for level 5
+  graphics: {
+    animateAbsorbing: true,
+    animateBending: true,
+    animateSplitting: true,
+    animateBouncing: true
+  },
+  // You can add more configuration options here
+};
+
+/* Function to get URL parameters */
+function getUrlParam(param) {
+  const urlParams = new URLSearchParams(window.location.search);
+  return urlParams.get(param);
+}
+
+/* Initialize score from URL param or set to 0 */
+let score = 0;
+const scoreParam = getUrlParam('score');
+if (scoreParam !== null) {
+  score = parseInt(scoreParam, 10);
+}
+const scoreDiv = document.getElementById('scoreDisplay');
+scoreDiv.innerHTML = 'Score: ' + score;
+
+const choices = document.querySelectorAll('.choice');
+const canvas = document.getElementById('reflectionCanvas');
+const ctx = canvas.getContext('2d');
+const checkBtn = document.getElementById('checkBtn');
+const resultDiv = document.getElementById('result');
+
+let selectedChoice = null;
+let animationId = null;
+
+/* Choice selection */
+choices.forEach(choice => {
+  choice.addEventListener('click', () => {
+    choices.forEach(c => c.style.border = '');
+    choice.style.border = '2px solid #0a84ff';
+    selectedChoice = choice.getAttribute('data-choice');
+    drawGraphic(selectedChoice);
+    checkBtn.disabled = false;
+    resultDiv.innerHTML = '';
+    document.getElementById('triviaSection').style.display = 'none';
+  });
+});
+
+/* Check answer event */
+checkBtn.addEventListener('click', () => {
+  if (selectedChoice === 'bouncing') {
+    resultDiv.innerHTML = 'Correct! Reflection is bouncing.';
+    document.getElementById('triviaSection').style.display = 'block';
+
+    // Add 1 point to total score for this level
+    score += 1;
+    // Save new total score in URL for next level
+    scoreDiv.innerHTML = 'Score: ' + score;
+  } else {
+    resultDiv.innerHTML = 'Incorrect. Try again.';
+    document.getElementById('triviaSection').style.display = 'none';
+  }
+
+  // Redirect to next level after a short delay, regardless of correctness
+  setTimeout(() => {
+    window.location.href = `level4.html?score=${score}`;
+  }, 1500);
+});
+
+/* Clear Canvas */
+function clearCanvas() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  if (animationId) cancelAnimationFrame(animationId);
+}
+
+/* Draw graphics with animation, adapted for level 4 params */
+function drawGraphic(choice) {
+  clearCanvas();
+
+  // Example: check level4Params to decide which animations to run
+  if (choice === 'absorbing' && level4Params.graphics.animateAbsorbing) {
+    animateAbsorbing();
+  } else if (choice === 'bending' && level4Params.graphics.animateBending) {
+    animateBending();
+  } else if (choice === 'splitting' && level4Params.graphics.animateSplitting) {
+    animateSplitting();
+  } else if (choice === 'bouncing' && level4Params.graphics.animateBouncing) {
+    animateBouncing();
+  }
+}
+
+/* Animate functions (unchanged, for completeness) */
+function animateAbsorbing() {
+  const startX = 50;
+  const startY = 200;
+  const surfaceX = 300;
+  const beamLength = surfaceX - startX;
+  let progress = 0;
+  let contactReached = false;
+
+  function animate() {
+    clearCanvas();
+
+    ctx.strokeStyle = 'white';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(surfaceX, 100);
+    ctx.lineTo(surfaceX, 300);
+    ctx.stroke();
+
+    ctx.font = '20px Arial';
+    ctx.fillStyle = 'white';
+    ctx.fillText('Absorbing Light', 220, 50);
+
+    let currentX;
+    let opacity = 1;
+
+    if (progress * beamLength < beamLength) {
+      currentX = startX + progress * beamLength;
+    } else {
+      currentX = surfaceX;
+    }
+
+    if (currentX >= surfaceX - 10) {
+      contactReached = true;
+    }
+    if (contactReached) {
+      opacity = 1 - ((currentX - (surfaceX - 10)) / 10);
+      if (opacity < 0) opacity = 0;
+    }
+
+    ctx.strokeStyle = `rgba(255, 255, 0, ${opacity})`;
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.moveTo(startX, startY);
+    ctx.lineTo(currentX, startY);
+    ctx.stroke();
+
+    if (currentX < surfaceX) {
+      progress += 0.02;
+      requestAnimationFrame(animate);
+    }
+  }
+  animate();
+}
+
+function animateBending() {
+  const incidentStart = {x: 50, y: 200};
+  const surfaceX = 300;
+  const incidentEnd = {x: surfaceX, y: 200};
+  const transmittedEnd = {x: 500, y: 250};
+
+  let phase = 0;
+  let contactMade = false;
+
+  function animate() {
+    clearCanvas();
+    ctx.font = '20px Arial';
+    ctx.fillStyle = 'white';
+    ctx.fillText('Refraction (Bending)', 200, 50);
+
+    ctx.strokeStyle = 'white';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(surfaceX, 100);
+    ctx.lineTo(surfaceX, 300);
+    ctx.stroke();
+
+    ctx.strokeStyle = 'yellow';
+    ctx.lineWidth = 4;
+
+    if (!contactMade) {
+      ctx.beginPath();
+      ctx.moveTo(incidentStart.x, incidentStart.y);
+      ctx.lineTo(incidentStart.x + (incidentEnd.x - incidentStart.x) * phase, incidentStart.y);
+      ctx.stroke();
+
+      ctx.fillStyle = 'red';
+      ctx.beginPath();
+      ctx.arc(incidentEnd.x, incidentEnd.y, 5, 0, Math.PI * 2);
+      ctx.fill();
+
+      phase += 0.02;
+      if (phase >= 1) {
+        phase = 0;
+        contactMade = true;
+      }
+    } else {
+      ctx.beginPath();
+      ctx.moveTo(incidentEnd.x, incidentEnd.y);
+      ctx.lineTo(incidentEnd.x + (transmittedEnd.x - incidentEnd.x) * phase, incidentEnd.y + (transmittedEnd.y - incidentEnd.y) * phase);
+      ctx.stroke();
+
+      ctx.fillStyle = 'red';
+      ctx.beginPath();
+      ctx.arc(transmittedEnd.x, transmittedEnd.y, 5, 0, Math.PI * 2);
+      ctx.fill();
+
+      phase += 0.02;
+      if (phase >= 1) {
+        cancelAnimationFrame(animationId);
+        return;
+      }
+    }
+    animationId = requestAnimationFrame(animate);
+  }
+  animate();
+}
+
+function animateSplitting() {
+  const start = {x: 50, y: 200};
+  const surfaceX = 300;
+  const incidentEnd = {x: surfaceX, y: 200};
+  const rays = [
+    {angle: -20, length: 200},
+    {angle: 0, length: 200},
+    {angle: 20, length: 200}
+  ];
+
+  let phase = 0;
+
+  function animate() {
+    clearCanvas();
+    ctx.font = '20px Arial';
+    ctx.fillStyle = 'white';
+    ctx.fillText('Splitting of Light', 220, 50);
+
+    ctx.strokeStyle = 'white';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(surfaceX, 100);
+    ctx.lineTo(surfaceX, 300);
+    ctx.stroke();
+
+    ctx.strokeStyle = 'yellow';
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.moveTo(start.x, start.y);
+    ctx.lineTo(incidentEnd.x, incidentEnd.y);
+    ctx.stroke();
+
+    rays.forEach(r => {
+      const radians = r.angle * Math.PI / 180;
+      const endX = incidentEnd.x + Math.cos(radians) * r.length * phase;
+      const endY = incidentEnd.y + Math.sin(radians) * r.length * phase;
+      ctx.beginPath();
+      ctx.moveTo(incidentEnd.x, incidentEnd.y);
+      ctx.lineTo(endX, endY);
+      ctx.stroke();
+
+      ctx.fillStyle = 'red';
+      ctx.beginPath();
+      ctx.arc(endX, endY, 5, 0, Math.PI * 2);
+      ctx.fill();
+    });
+
+    phase += 0.02;
+    if (phase >= 1) {
+      cancelAnimationFrame(animationId);
+      return;
+    }
+    animationId = requestAnimationFrame(animate);
+  }
+  animate();
+}
+
+function animateBouncing() {
+  const start = {x: 150, y: 200};
+  const mirrorX = 300;
+  const mirrorYTop = 100;
+  const mirrorYBottom = 300;
+  const contactPoint = {x: mirrorX - 1, y: 100};
+  const reflectionEnd = {x: mirrorX + 100, y: 250};
+
+  let phase = 0;
+  let state = 'approach';
+
+  function animate() {
+    clearCanvas();
+    ctx.font = '20px Arial';
+    ctx.fillStyle = 'white';
+    ctx.fillText('Bouncing (bounced)', 180, 50);
+
+    // Draw the horizontal line above the mirror in blue
+    ctx.strokeStyle = 'blue';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(mirrorX - 50, mirrorYTop - 10);
+    ctx.lineTo(mirrorX + 50, mirrorYTop - 10);
+    ctx.stroke();
+
+    // Draw the mirror line in white
+    ctx.strokeStyle = 'white';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(mirrorX, mirrorYTop);
+    ctx.lineTo(mirrorX, mirrorYBottom);
+    ctx.stroke();
+
+    ctx.strokeStyle = 'blue';
+    ctx.lineWidth = 4;
+
+    if (state === 'approach') {
+      ctx.beginPath();
+      ctx.moveTo(start.x, start.y);
+      ctx.lineTo(
+        start.x + (contactPoint.x - start.x) * phase,
+        start.y + (contactPoint.y - start.y) * phase
+      );
+      ctx.stroke();
+
+      ctx.fillStyle = 'red';
+      ctx.beginPath();
+      ctx.arc(contactPoint.x, contactPoint.y, 5, 0, Math.PI * 2);
+      ctx.fill();
+
+      phase += 0.02;
+      if (phase >= 1) {
+        phase = 0;
+        state = 'bounce';
+      }
+    } else if (state === 'bounce') {
+      ctx.beginPath();
+      ctx.moveTo(contactPoint.x, contactPoint.y);
+      ctx.lineTo(
+        contactPoint.x + (reflectionEnd.x - contactPoint.x) * phase,
+        contactPoint.y + (reflectionEnd.y - contactPoint.y) * phase
+      );
+      ctx.stroke();
+
+      ctx.fillStyle = 'red';
+      ctx.beginPath();
+      ctx.arc(reflectionEnd.x, reflectionEnd.y, 5, 0, Math.PI * 2);
+      ctx.fill();
+
+      phase += 0.02;
+      if (phase >= 1) {
+        cancelAnimationFrame(animationId);
+        return;
+      }
+    }
+    animationId = requestAnimationFrame(animate);
+  }
+  animate();
+}
+</script>
+</body>
+</html>

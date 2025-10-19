@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Spherical Mirrors Applying Game</title>
+<style>
+  body {
+    font-family: 'Arial Rounded MT Bold', 'Comic Sans MS', cursive, sans-serif;
+    background-color: #e0f7fa;
+    margin: 0;
+    padding: 10px;
+    box-sizing: border-box;
+    position: relative;
+  }
+  h1 {
+    text-align: center;
+    color: #2c3e50;
+    font-size: 2em;
+    margin-bottom: 10px;
+    text-shadow: 1px 1px 3px #bbb;
+  }
+  .game-container {
+    max-width: 860px;
+    margin: 0 auto;
+    background: linear-gradient(135deg, #ffffff, #f0f0f0);
+    padding: 15px;
+    border-radius: 15px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    border: 3px solid #3498db;
+    position: relative;
+    overflow: hidden;
+  }
+  /* Animated lively background pattern */
+  .game-container::before {
+    content: "";
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle, #87cefa 0%, transparent 70%);
+    animation: rotateBackground 20s linear infinite;
+    z-index: -1;
+  }
+  @keyframes rotateBackground {
+    from {transform: rotate(0deg);}
+    to {transform: rotate(360deg);}
+  }
+  h1 {
+    text-align: center;
+    color: #2c3e50;
+    font-size: 2em;
+    margin-bottom: 10px;
+    text-shadow: 1px 1px 3px #bbb;
+  }
+  .question {
+    font-size: 1.2em;
+    margin-bottom: 10px;
+    color: #34495e;
+    font-weight: bold;
+  }
+  .diagram-container {
+    margin: 15px 0;
+    text-align: center;
+    padding: 8px;
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: inset 0 0 10px rgba(0,0,0,0.1);
+    border: 2px dashed #2980b9;
+    transition: all 0.3s ease;
+  }
+  /* Limit diagram image size for responsiveness */
+  .diagram-container img {
+    max-width: 80%;
+    height: auto;
+    border-radius: 8px;
+    border: 3px solid #2980b9;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    display: block;
+    margin: 0 auto;
+  }
+  .options {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 15px;
+    margin-bottom: 15px;
+  }
+  button {
+    flex: 1 1 45%;
+    padding: 10px;
+    font-size: 1.2em;
+    cursor: pointer;
+    border: none;
+    border-radius: 12px;
+    background-color: #27ae60;
+    color: white;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+    transition: all 0.3s ease;
+  }
+  button:hover {
+    background-color: #2ecc71;
+    transform: scale(1.05);
+  }
+  .feedback {
+    font-size: 1.2em;
+    text-align: center;
+    margin-top: 10px;
+    font-weight: bold;
+    min-height: 1.5em;
+  }
+  /* Position for score canvas to avoid overlap */
+  #scoreCanvas {
+    position: absolute;
+    top: 200px;
+    right: 1px;
+    width: 150px;
+    height: 50px;
+    z-index: 10;
+    background-color: white;
+    border: 2px solid #333;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+  }
+</style>
+</head>
+<body>
+
+<h1>Spherical Mirrors Identification Game</h1>
+<div class="game-container">
+  <div class="question" id="question">Loading question...</div>
+
+  <!-- Diagram section -->
+  <div class="diagram-container" id="diagramContainer"></div>
+
+  <div class="options">
+    <button onclick="checkAnswer('Concave')">Concave Mirror</button>
+    <button onclick="checkAnswer('Convex')">Convex Mirror</button>
+  </div>
+  <div class="feedback" id="feedback"></div>
+  <button class="next-btn" style="display:none;" onclick="nextQuestion()">Next Question</button>
+
+  <!-- Score display canvas -->
+  <canvas id="scoreCanvas"></canvas>
+</div>
+
+<script>
+/* Get URL parameter */
+function getUrlParameter(name) {
+  const params = new URLSearchParams(window.location.search);
+  return params.get(name);
+}
+
+/* Retrieve score from URL or initialize */
+let score = 0;
+const passedScore = getUrlParameter('score');
+if (passedScore !== null) {
+  score = parseInt(passedScore, 10);
+}
+
+/* Draw score on canvas */
+const scoreCanvas = document.getElementById('scoreCanvas');
+const ctxScore = scoreCanvas.getContext('2d');
+
+function resizeScoreCanvas() {
+  scoreCanvas.width = 150;
+  scoreCanvas.height = 50;
+  drawScore();
+}
+window.addEventListener('resize', resizeScoreCanvas);
+resizeScoreCanvas();
+
+function drawScore() {
+  ctxScore.clearRect(0, 0, scoreCanvas.width, scoreCanvas.height);
+  ctxScore.font = 'bold 20px Arial';
+  ctxScore.fillStyle = '#16a085';
+  ctxScore.textAlign = 'center';
+  ctxScore.textBaseline = 'middle';
+  ctxScore.fillText(`Score: ${score}`, scoreCanvas.width/2, scoreCanvas.height/2);
+}
+
+/* Questions array */
+const questions = [
+  {
+    description: "This mirror bulges away from the light source and converges parallel rays at a focal point.",
+    answer: "Concave",
+    diagramType: "concave"
+  },
+  {
+    description: "This mirror bulges towards the light source and diverges parallel rays; its image is always virtual, upright, and smaller.",
+    answer: "Convex",
+    diagramType: "convex"
+  },
+  {
+    description: "It can form real or virtual images, which can be inverted or upright, and can change size.",
+    answer: "Concave",
+    diagramType: "concave"
+  },
+  {
+    description: "It always forms a virtual, upright, and reduced image.",
+    answer: "Convex",
+    diagramType: "convex"
+  }
+];
+
+let currentQuestionIndex = 0;
+let answered = false;
+
+const questionDiv = document.getElementById('question');
+const feedbackDiv = document.getElementById('feedback');
+const nextButton = document.querySelector('.next-btn');
+const diagramContainer = document.getElementById('diagramContainer');
+
+/* Load question */
+function loadQuestion() {
+  answered = false;
+  feedbackDiv.innerHTML = '';
+  nextButton.style.display = 'none';
+
+  const q = questions[currentQuestionIndex];
+  questionDiv.innerHTML = `Description: ${q.description}`;
+  generateDiagram(q.diagramType);
+}
+
+/* Generate diagram images with different images for questions 3 and 4 */
+function generateDiagram(type) {
+  diagramContainer.innerHTML = '';
+
+  const img = document.createElement('img');
+
+  if (currentQuestionIndex === 2) { // Question 3
+    // Use a different image for question 3
+    img.src = 'https://i.imgur.com/fEE16lL.png'; // Example image for Q3
+  } else if (currentQuestionIndex === 3) { // Question 4
+    // Use a different image for question 4
+    img.src = 'https://i.imgur.com/Z4JYRrF.png'; // Example image for Q4
+  } else {
+    // Default images for questions 1 and 2
+    if (type === 'concave') {
+      img.src = 'https://i.imgur.com/VUgOBO3.png';
+    } else if (type === 'convex') {
+      img.src = 'https://i.imgur.com/QgXu5Lc.png';
+    }
+  }
+  diagramContainer.appendChild(img);
+}
+
+loadQuestion();
+
+function checkAnswer(selected) {
+  if (answered) return;
+  answered = true;
+  const correctAnswer = questions[currentQuestionIndex].answer;
+  if (selected === correctAnswer) {
+    feedbackDiv.innerHTML = 'Correct!';
+    score++;
+    drawScore();
+  } else {
+    feedbackDiv.innerHTML = `Incorrect! The correct answer is ${correctAnswer}.`;
+  }
+  // Check if last question
+  if (currentQuestionIndex >= questions.length - 1) {
+    // Game over, redirect to level10.html with score
+    setTimeout(() => {
+      window.location.href = 'level10.html?score=' + score;
+    }, 1000); // optional delay for user to see feedback
+  } else {
+    // Show next button
+    nextButton.style.display = 'block';
+  }
+}
+
+function nextQuestion() {
+  currentQuestionIndex++;
+  if (currentQuestionIndex >= questions.length) {
+    // Extra safety, redirect if looped
+    window.location.href = 'level10.html?score=' + score;
+    return;
+  }
+  loadQuestion();
+}
+
+/* Particles overlay code (unchanged) */
+const canvas = document.getElementById('particlesCanvas');
+const ctx = canvas.getContext('2d');
+
+let particles = [];
+const maxParticles = 50;
+
+function resizeCanvas() {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+}
+window.addEventListener('resize', resizeCanvas);
+resizeCanvas();
+
+function createParticles() {
+  for (let i=0; i<maxParticles; i++) {
+    particles.push({
+      x: Math.random() * canvas.width,
+      y: Math.random() * canvas.height,
+      vx: (Math.random() - 0.5) * 0.5,
+      vy: (Math.random() - 0.5) * 0.5,
+      size: 2 + Math.random()*2,
+      alpha: 0.3 + Math.random()*0.7
+    });
+  }
+}
+createParticles();
+
+function updateParticles() {
+  for (let p of particles) {
+    p.x += p.vx;
+    p.y += p.vy;
+    if (p.x < 0) p.x = canvas.width;
+    if (p.x > canvas.width) p.x = 0;
+    if (p.y < 0) p.y = canvas.height;
+    if (p.y > canvas.height) p.y = 0;
+  }
+}
+
+function drawParticles() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.globalAlpha = 1;
+  for (let p of particles) {
+    ctx.globalAlpha = p.alpha;
+    ctx.fillStyle = '#555';
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, p.size, 0, Math.PI*2);
+    ctx.fill();
+  }
+}
+
+function animate() {
+  requestAnimationFrame(animate);
+  updateParticles();
+  drawParticles();
+}
+animate();
+
+</script>
+</body>
+</html>

@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Electromagnetic Waves Word Search</title>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    background-color: #222;
+    color: #fff;
+    margin: 0;
+    padding: 20px;
+    position: relative; /* for overlaying canvas */
+    overflow: hidden; /* prevent scrollbars from particles outside */
+  }
+  h1 {
+    text-align: center;
+    font-size: 2em;
+    position: relative;
+    z-index: 1;
+  }
+  .game-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    position: relative;
+    z-index: 1;
+  }
+  #grid {
+    display: grid;
+    grid-template-columns: repeat(12, 1fr);
+    gap: 2px;
+    width: 100%;
+    max-width: 600px;
+    margin: 20px 0;
+    user-select: none;
+    position: relative;
+    z-index: 1;
+  }
+  .cell {
+    aspect-ratio: 1 / 1;
+    background-color: #444;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-weight: bold;
+    font-size: clamp(10px, 3vw, 16px);
+    border-radius: 4px;
+    transition: background-color 0.2s;
+  }
+  .cell.selected {
+    background-color: #f39c12;
+  }
+  .cell.found {
+    background-color: #27ae60;
+    color: #fff;
+  }
+  .word-list {
+    max-width: 90%;
+    width: 100%;
+    margin-top: 20px;
+  }
+  .word {
+    padding: 5px 10px;
+    margin: 5px 0;
+    border: 2px solid #444;
+    border-radius: 4px;
+    font-size: 1em;
+  }
+  .word.found {
+    background-color: #27ae60;
+    color: #fff;
+    border-color: #2ecc71;
+  }
+  #scoreboard {
+    margin-top: 20px;
+    font-size: 1.2em;
+    display: flex;
+    justify-content: space-around;
+    width: 100%;
+  }
+  #timer {
+    font-weight: bold;
+  }
+  /* Canvas overlay styling */
+  #particleCanvas {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none; /* so it doesn't block interactions */
+    z-index: 0; /* behind game content */
+  }
+  /* Overlay notification style */
+  #completionOverlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(34, 34, 34, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    color: #fff;
+    font-size: 2em;
+    z-index: 10;
+    display: none; /* hidden by default */
+  }
+  #completionOverlay.show {
+    display: flex;
+  }
+</style>
+</head>
+<body>
+
+<!-- Canvas for floating particles -->
+<canvas id="particleCanvas"></canvas>
+
+<!-- Completion overlay notification -->
+<div id="completionOverlay">
+  <div id="completionMessage"></div>
+</div>
+
+<h1>Electromagnetic Waves Word Search</h1>
+<div class="game-container">
+  <div id="grid"></div>
+  <div id="scoreboard">
+    <div>Score: <span id="score">0</span></div>
+    <div>Time: <span id="timer">01:30</span></div>
+  </div>
+  <h2>Clues</h2>
+  <div class="word-list" id="wordList"></div>
+</div>
+
+<script>
+// --- Existing game code begins ---
+
+// Fetch initial score from URL
+function getUrlParameter(name) {
+  const params = new URLSearchParams(window.location.search);
+  return params.get(name);
+}
+
+// Initialize score
+let score = 0;
+const scoreSpan = document.getElementById('score');
+
+const gridSize = 12;
+const words = [
+  {word: "RADIO", clue: "Broadcasting sound waves"},
+  {word: "JOULE", clue: "Unit of energy"},
+  {word: "INFRARED", clue: "Beyond red spectrum"},
+  {word: "WAVES", clue: "Oscillations transferring energy"},
+  {word: "FREQUENCY", clue: "Number of waves per second"}
+];
+
+let grid = Array.from({ length: gridSize }, () => Array(gridSize).fill(''));
+
+// Fixed positions for words
+const fixedPositions = {
+  "RADIO": {x: 0, y: 0, direction: {dx: 1, dy: 0}},
+  "JOULE": {x: 0, y: 2, direction: {dx: 1, dy: 0}},
+  "INFRARED": {x: 0, y: 4, direction: {dx: 1, dy: 0}},
+  "WAVES": {x: 0, y: 6, direction: {dx: 1, dy: 0}},
+  "FREQUENCY": {x: 0, y: 8, direction: {dx: 1, dy: 0}}
+};
+
+// Place words
+Object.keys(fixedPositions).forEach(word => {
+  const pos = fixedPositions[word];
+  const {x, y, direction} = pos;
+  for (let i = 0; i < word.length; i++) {
+    const xi = x + i * direction.dx;
+    const yi = y + i * direction.dy;
+    if (xi >= 0 && xi < gridSize && yi >= 0 && yi < gridSize) {
+      grid[yi][xi] = word[i];
+    }
+  }
+});
+
+// Fill remaining cells
+const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+for (let y = 0; y < gridSize; y++) {
+  for (let x = 0; x < gridSize; x++) {
+    if (grid[y][x] === '') {
+      grid[y][x] = alphabet[Math.floor(Math.random() * alphabet.length)];
+    }
+  }
+}
+
+// Render grid
+const gridContainer = document.getElementById('grid');
+let cells = [];
+for (let y = 0; y < gridSize; y++) {
+  for (let x = 0; x < gridSize; x++) {
+    const cell = document.createElement('div');
+    cell.className = 'cell';
+    cell.textContent = grid[y][x];
+    cell.dataset.x = x;
+    cell.dataset.y = y;
+    gridContainer.appendChild(cell);
+    cells.push(cell);
+  }
+}
+
+// Display clues
+const wordListDiv = document.getElementById('wordList');
+words.forEach(w => {
+  const span = document.createElement('div');
+  span.className = 'word';
+  span.textContent = w.clue; // show clue
+  span.dataset.word = w.word;
+  wordListDiv.appendChild(span);
+});
+
+// Timer setup
+let totalSeconds = 90; // 1:30
+const timerSpan = document.getElementById('timer');
+let timerInterval = null;
+
+// Fetch initial score then start game
+const initialScore = parseInt(getUrlParameter('score')) || 0;
+score = initialScore;
+scoreSpan.innerText = score;
+
+function updateTimer() {
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  timerSpan.textContent = 
+    `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+  if (totalSeconds > 0) {
+    totalSeconds--;
+  } else {
+    clearInterval(timerInterval);
+    alert('Time is up! Your final score is: ' + score);
+    endGame();
+  }
+}
+
+timerInterval = setInterval(updateTimer, 1000);
+updateTimer();
+
+let isSelecting = false;
+let startCell = null;
+let selectedCells = [];
+const foundWords = new Set();
+let gameFinished = false; // flag to prevent further interaction after game completion
+
+function disableGame() {
+  cells.forEach(c => {
+    c.removeEventListener('mousedown', onMouseDown);
+    c.removeEventListener('mouseenter', onMouseEnter);
+    c.removeEventListener('mouseup', onMouseUp);
+    c.removeEventListener('touchstart', onTouchStart);
+    c.removeEventListener('touchmove', onTouchMove);
+    c.removeEventListener('touchend', onTouchEnd);
+  });
+  document.removeEventListener('mouseup', onMouseUpOutside);
+  document.removeEventListener('touchend', onTouchEnd);
+}
+
+// Function to show in-game notification for level completion
+function showLevelCompleteNotification(finalScore) {
+  const overlay = document.getElementById('completionOverlay');
+  const messageDiv = document.getElementById('completionMessage');
+  messageDiv.innerHTML = `Level Cleared!<br>Your final score: ${finalScore}<br>Redirecting to next level...`;
+  overlay.classList.add('show');
+
+  // After a short delay, redirect to next level
+  setTimeout(() => {
+    window.location.href = 'level9.html?score=' + finalScore;
+  }, 3000); // 3 seconds delay before redirect
+}
+
+function endGame() {
+  clearInterval(timerInterval);
+  // Show level completed overlay instead of alert
+  showLevelCompleteNotification(score);
+  disableGame();
+}
+
+// Function to handle game success
+function handleGameSuccess() {
+  if (gameFinished) return;
+  gameFinished = true;
+  clearInterval(timerInterval);
+  showLevelCompleteNotification(score);
+  disableGame();
+}
+
+// Function to check if all words are found
+function checkWinCondition() {
+  if (foundWords.size === words.length) {
+    handleGameSuccess();
+  }
+}
+
+// Clear selection
+function clearSelection() {
+  selectedCells.forEach(c => c.classList.remove('selected'));
+  selectedCells = [];
+}
+
+// Add cell to selection
+function addCellToSelection(cell) {
+  cell.classList.add('selected');
+  selectedCells.push(cell);
+}
+
+// Mouse events
+function onMouseDown(e) {
+  if (gameFinished) return;
+  const cell = e.currentTarget;
+  if (cell.classList.contains('found')) return;
+  isSelecting = true;
+  clearSelection();
+  addCellToSelection(cell);
+  startCell = cell;
+}
+
+function onMouseEnter(e) {
+  if (gameFinished) return;
+  if (!isSelecting) return;
+  const cell = e.currentTarget;
+  if (cell.classList.contains('found')) return;
+  clearSelection();
+  const startX = parseInt(startCell.dataset.x);
+  const startY = parseInt(startCell.dataset.y);
+  const endX = parseInt(cell.dataset.x);
+  const endY = parseInt(cell.dataset.y);
+  const stepX = endX - startX === 0 ? 0 : (endX - startX) / Math.abs(endX - startX);
+  const stepY = endY - startY === 0 ? 0 : (endY - startY) / Math.abs(endY - startY);
+  let x = startX;
+  let y = startY;
+  while (true) {
+    const c = cells[y * gridSize + x];
+    addCellToSelection(c);
+    if (x === endX && y === endY) break;
+    x += stepX;
+    y += stepY;
+  }
+}
+
+function onMouseUp() {
+  if (gameFinished) return;
+  if (isSelecting) {
+    isSelecting = false;
+    checkSelectedWord();
+  }
+}
+
+function onMouseUpOutside() {
+  if (gameFinished) return;
+  if (isSelecting) {
+    isSelecting = false;
+    setTimeout(() => {
+      clearSelection();
+    }, 300);
+  }
+}
+
+// Touch events
+function onTouchStart(e) {
+  if (gameFinished) return;
+  const touch = e.touches[0];
+  const target = document.elementFromPoint(touch.clientX, touch.clientY);
+  if (target && target.classList.contains('cell')) {
+    if (target.classList.contains('found')) return;
+    isSelecting = true;
+    clearSelection();
+    addCellToSelection(target);
+    startCell = target;
+  }
+}
+
+function onTouchMove(e) {
+  if (gameFinished) return;
+  if (!isSelecting) return;
+  const touch = e.touches[0];
+  const target = document.elementFromPoint(touch.clientX, touch.clientY);
+  if (target && target.classList.contains('cell')) {
+    if (target.classList.contains('found')) return;
+    clearSelection();
+    const startX = parseInt(startCell.dataset.x);
+    const startY = parseInt(startCell.dataset.y);
+    const endX = parseInt(target.dataset.x);
+    const endY = parseInt(target.dataset.y);
+    const stepX = endX - startX === 0 ? 0 : (endX - startX) / Math.abs(endX - startX);
+    const stepY = endY - startY === 0 ? 0 : (endY - startY) / Math.abs(endY - startY);
+    let x = startX;
+    let y = startY;
+    while (true) {
+      const c = cells[y * gridSize + x];
+      addCellToSelection(c);
+      if (x === endX && y === endY) break;
+      x += stepX;
+      y += stepY;
+    }
+  }
+}
+
+function onTouchEnd() {
+  if (gameFinished) return;
+  if (isSelecting) {
+    isSelecting = false;
+    checkSelectedWord();
+  }
+}
+
+// Check selected word
+function checkSelectedWord() {
+  if (gameFinished) return;
+  const selectedWord = selectedCells.map(c => c.textContent).join('');
+  const reverseWord = selectedCells.slice().reverse().map(c => c.textContent).join('');
+  let matched = false;
+  words.forEach(w => {
+    if (!foundWords.has(w.word)) {
+      if (w.word === selectedWord || w.word === reverseWord) {
+        selectedCells.forEach(c => c.classList.add('found'));
+        const clueDiv = document.querySelector(`.word[data-word="${w.word}"]`);
+        if (clueDiv) clueDiv.classList.add('found');
+        foundWords.add(w.word);
+        score += 1;
+        scoreSpan.innerText = score;
+        matched = true;
+      }
+    }
+  });
+  if (!matched) {
+    setTimeout(() => {
+      clearSelection();
+    }, 300);
+  }
+  checkWinCondition();
+}
+
+// Attach event listeners
+cells.forEach(cell => {
+  cell.addEventListener('mousedown', onMouseDown);
+  cell.addEventListener('mouseenter', onMouseEnter);
+  cell.addEventListener('mouseup', onMouseUp);
+  cell.addEventListener('touchstart', onTouchStart);
+  cell.addEventListener('touchmove', onTouchMove);
+  cell.addEventListener('touchend', onTouchEnd);
+});
+document.addEventListener('mouseup', onMouseUpOutside);
+document.addEventListener('touchend', onTouchEnd);
+
+// --- Particles overlay implementation ---
+
+const canvas = document.getElementById('particleCanvas');
+const ctx = canvas.getContext('2d');
+
+function resizeCanvas() {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+}
+window.addEventListener('resize', resizeCanvas);
+resizeCanvas();
+
+// Particle class
+class Particle {
+  constructor() {
+    this.reset();
+  }
+  reset() {
+    this.x = Math.random() * canvas.width;
+    this.y = Math.random() * canvas.height;
+    this.vx = (Math.random() - 0.5) * 0.5;
+    this.vy = (Math.random() - 0.5) * 0.5;
+    this.size = Math.random() * 2 + 1;
+    this.alpha = Math.random() * 0.5 + 0.5;
+  }
+  update() {
+    this.x += this.vx;
+    this.y += this.vy;
+    if (this.x <= 0 || this.x >= canvas.width) this.vx *= -1;
+    if (this.y <= 0 || this.y >= canvas.height) this.vy *= -1;
+  }
+  draw() {
+    ctx.globalAlpha = this.alpha;
+    ctx.fillStyle = '#fff';
+    ctx.beginPath();
+    ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+    ctx.fill();
+  }
+}
+
+const particles = [];
+const NUM_PARTICLES = 50;
+for (let i=0; i<NUM_PARTICLES; i++) {
+  particles.push(new Particle());
+}
+
+function animateParticles() {
+  ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
+  for (let p of particles) {
+    p.update();
+    p.draw();
+  }
+  requestAnimationFrame(animateParticles);
+}
+
+animateParticles();
+
+// --- End of game code ---
+
+</script>
+</body>
+</html>

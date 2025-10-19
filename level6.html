@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Wave Reflection & Refraction Quiz Game</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Comic+Neue&display=swap');
+
+body {
+  margin: 0;
+  padding: 0;
+  background: linear-gradient(135deg, #ffcc00, #ff66cc);
+  font-family: 'Comic Neue', cursive, sans-serif;
+  overflow: hidden;
+  height: 100vh;
+}
+
+/* Overall container */
+#gameContainer {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+/* Score display - top right corner */
+#scoreBoard {
+  position: absolute;
+  top: 2vh;
+  right: 2vw;
+  font-size: 2vh;
+  color: #fff;
+  background: rgba(0, 0, 0, 0.5);
+  padding: 1vh 2vw;
+  border-radius: 1vh;
+  font-weight: bold;
+  box-shadow: 0 0 1vh #fff;
+  z-index: 10;
+}
+
+/* Question box with playful border and background */
+#questionBox {
+  position: absolute;
+  top: 8vh;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #fff8dc;
+  border: 0.5vh dashed #ff69b4;
+  border-radius: 2vh;
+  padding: 3vh 4vw;
+  max-width: 90%;
+  box-shadow: 0 0 3vh #ff69b4;
+  z-index: 10;
+  font-family: 'Comic Neue', cursive;
+  font-size: 2vh;
+}
+
+/* Question text style */
+#questionText {
+  font-size: 2.5vh;
+  margin-bottom: 2vh;
+  color: #333;
+  text-align: center;
+}
+
+/* Options container */
+#options {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5vh;
+}
+
+/* Each option style */
+.option {
+  background: linear-gradient(135deg, #ffe4e1, #ffb6c1);
+  padding: 2vh 3vw;
+  border-radius: 2vh;
+  font-size: 2vh;
+  cursor: pointer;
+  box-shadow: 0 0.5vh 1vh rgba(0,0,0,0.2);
+  transition: all 0.2s ease;
+  text-align: center;
+  font-weight: bold;
+  user-select: none;
+}
+
+.option:hover {
+  background: linear-gradient(135deg, #ffb6c1, #ffe4e1);
+  transform: scale(1.02);
+}
+
+/* Feedback message */
+#feedback {
+  margin-top: 2vh;
+  font-size: 2.5vh;
+  font-weight: bold;
+  text-align: center;
+  height: 3vh;
+  color: #fff;
+  text-shadow: 0 0 0.5vh #000;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+#feedback.show {
+  opacity: 1;
+}
+
+/* Canvas for wave animation - full background layer */
+#waveCanvas {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+  display: block;
+}
+</style>
+</head>
+<body>
+<div id="gameContainer">
+  <!-- Score Board -->
+  <div id="scoreBoard">Score: 0</div>
+  <div id="questionBox">
+    <div id="questionText">Loading...</div>
+    <div id="options"></div>
+    <div id="feedback"></div>
+  </div>
+  <canvas id="waveCanvas"></canvas>
+</div>
+
+<script>
+  // Initialize scores
+  let score = 0;
+  const scoreBoard = document.getElementById('scoreBoard');
+
+  // Retrieve previous total score from localStorage (from previous levels)
+  let totalScore = 0;
+  const storedScore = localStorage.getItem('scoreLevel5');
+  if (storedScore !== null) {
+    totalScore = parseInt(storedScore, 10);
+  }
+
+  // Retrieve score passed via URL parameter (from previous level)
+  const params = new URLSearchParams(window.location.search);
+  const urlScore = params.get('score');
+  if (urlScore) {
+    totalScore = parseInt(urlScore, 10);
+  }
+
+  // Set the current score based on totalScore
+  score = totalScore;
+  scoreBoard.innerText = 'Score: ' + score;
+
+  // Define questions
+  const questions = [
+    {
+      question: "Which process describes the bouncing of light when it hits a mirror?",
+      options: [
+        { text: "Refraction" },
+        { text: "Reflection" },
+        { text: "Dispersion" },
+        { text: "Absorption" }
+      ],
+      answer: 1,
+    },
+    {
+      question: "An image formed by a plane mirror is always:",
+      options: [
+        { text: "Real and inverted" },
+        { text: "Virtual and upright" },
+        { text: "Real and upright" },
+        { text: "Virtual and inverted" }
+      ],
+      answer: 1,
+    },
+    {
+      question: "The normal line in reflection is:",
+      options: [
+        { text: "Parallel to the incident ray" },
+        { text: "Perpendicular to the surface at the point of incidence" },
+        { text: "Along the reflected ray" },
+        { text: "Along the incident ray" }
+      ],
+      answer: 1,
+    },
+    {
+      question: "A person looks through a converging lens and sees an object appear larger than it actually is. What is the most likely reason?",
+      options: [
+        { text: "The lens is diverging light rays." },
+        { text: "The object is closer to the lens than the focal point." },
+        { text: "The lens causes the rays to converge and magnify the image." },
+        { text: "The lens is made of opaque material." }
+      ],
+      answer: 2,
+    }
+  ];
+
+  let currentQuestion = 0;
+  const questionText = document.getElementById('questionText');
+  const optionsDiv = document.getElementById('options');
+  const feedbackDiv = document.getElementById('feedback');
+
+  // Particle class for wave animation
+  class Particle {
+    constructor(x, y, vx, vy, color) {
+      this.x = x;
+      this.y = y;
+      this.vx = vx;
+      this.vy = vy;
+      this.color = color;
+    }
+    update() {
+      this.x += this.vx;
+      this.y += this.vy;
+      if (this.x < 0 || this.x > window.innerWidth) this.vx *= -1;
+      if (this.y < 0 || this.y > window.innerHeight) this.vy *= -1;
+    }
+    draw() {
+      ctx.beginPath();
+      ctx.arc(this.x, this.y, 1.5, 0, Math.PI * 2);
+      ctx.fillStyle = this.color;
+      ctx.fill();
+    }
+  }
+
+  // Generate particles
+  const particles = [];
+  for (let i = 0; i < 80; i++) {
+    particles.push(new Particle(
+      Math.random() * window.innerWidth,
+      Math.random() * window.innerHeight,
+      (Math.random() - 0.5) * 2.5,
+      (Math.random() - 0.5) * 2.5,
+      'cyan'
+    ));
+  }
+
+  // Animate particles on canvas
+  const canvas = document.getElementById('waveCanvas');
+  const ctx = canvas.getContext('2d');
+
+  function resizeCanvas() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+  }
+  window.addEventListener('resize', resizeCanvas);
+  resizeCanvas();
+
+  function animate() {
+    ctx.fillStyle = 'rgba(17, 17, 17, 0.2)';
+    ctx.fillRect(0, 0, window.innerWidth, window.innerHeight);
+    particles.forEach(p => {
+      p.update();
+      p.draw();
+    });
+    requestAnimationFrame(animate);
+  }
+  animate();
+
+  function loadQuestion() {
+    if (currentQuestion >= questions.length) {
+      localStorage.setItem('scoreLevel5', score);
+      window.setTimeout(() => {
+        window.location.href = `level7.html?score=${score}`;
+      }, 2000);
+      questionText.innerText = "Quiz complete! Your score: " + score;
+      optionsDiv.innerHTML = "";
+      feedbackDiv.innerText = "";
+      return;
+    }
+    const q = questions[currentQuestion];
+    questionText.innerText = q.question;
+    optionsDiv.innerHTML = "";
+    feedbackDiv.innerText = "";
+    feedbackDiv.className = "";
+    q.options.forEach((opt, index) => {
+      const btn = document.createElement('div');
+      btn.className = 'option';
+      btn.innerText = opt.text;
+      btn.onclick = () => handleAnswer(index);
+      btn.ontouchstart = () => handleAnswer(index);
+      optionsDiv.appendChild(btn);
+    });
+  }
+
+  function handleAnswer(selectedIndex) {
+    const q = questions[currentQuestion];
+    if (selectedIndex === q.answer) {
+      score++;
+      localStorage.setItem('scoreLevel5', score);
+      scoreBoard.innerText = 'Score: ' + score;
+    }
+    if (selectedIndex === q.answer) {
+      showFeedback('Correct!', 'lime');
+    } else {
+      showFeedback('Wrong!', 'red');
+    }
+    currentQuestion++;
+    setTimeout(loadQuestion, 1500);
+  }
+
+  function showFeedback(text, color) {
+    feedbackDiv.innerText = text;
+    feedbackDiv.style.color = color;
+    feedbackDiv.className = 'show';
+    setTimeout(() => {
+      feedbackDiv.className = '';
+    }, 1000);
+  }
+
+  // Start the quiz
+  loadQuestion();
+</script>
+</body>
+</html>

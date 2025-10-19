@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Electromagnetic Waves Maze - 13x13</title>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    background-color: #eef;
+    margin: 20px;
+    text-align: center;
+  }
+  #description {
+    margin-bottom: 10px;
+    font-size: 1.2em;
+    border: 2px solid #555;
+    padding: 8px;
+    background-color: #fff;
+    max-width: 900px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+  #maze {
+    display: grid;
+    grid-template-columns: repeat(13, 30px);
+    grid-template-rows: repeat(13, 30px);
+    gap: 2px;
+    justify-content: center;
+    margin: 20px auto;
+  }
+  .cell {
+    width: 30px;
+    height: 30px;
+    background-color: #fff;
+    border: 1px solid #999;
+    position: relative;
+  }
+  .player {
+    background-color: #f00;
+  }
+  .wall {
+    background-color: #333;
+  }
+  /* Goal cells styling with separation */
+  .goal {
+    background-color: #66f;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 0.9em;
+    position: relative;
+    margin: 4px; /* separation margin */
+    border: 2px solid #3399ff;
+    border-radius: 4px;
+  }
+  .goal-label {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: #fff;
+    font-size: 0.8em;
+    text-shadow: 1px 1px 2px #000;
+  }
+  /* Waves animation for goal cells */
+  .waves {
+    position: absolute;
+    bottom: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-around;
+  }
+  .wave {
+    width: 4px;
+    height: 8px;
+    background: #0af;
+    border-radius: 2px;
+    animation: wave 1s infinite;
+  }
+  @keyframes wave {
+    0% { transform: scaleY(1); }
+    50% { transform: scaleY(1.5); }
+    100% { transform: scaleY(1); }
+  }
+  /* Question box styles */
+  #question-box {
+    margin-top: 20px;
+    display: none;
+    border: 2px solid #555;
+    padding: 10px;
+    background-color: #fff;
+    max-width: 900px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+  #question {
+    font-size: 1.1em;
+    margin-bottom: 10px;
+  }
+  .choices {
+    display: flex;
+    flex-direction: column;
+  }
+  button {
+    padding: 8px;
+    margin: 5px 0;
+    font-size: 1em;
+    cursor: pointer;
+  }
+
+  /* Timer styles */
+  #timer {
+    font-size: 1.5em;
+    margin-top: 10px;
+  }
+
+  /* Controls for mobile */
+  #controls {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-top: 20px;
+  }
+  #controls div {
+    display: flex;
+    gap: 10px;
+    margin-top: 10px;
+  }
+  #controls button {
+    padding: 10px 20px;
+    font-size: 1.2em;
+    cursor: pointer;
+    border-radius: 8px;
+    border: 2px solid #555;
+    background-color: #fff;
+    transition: background-color 0.2s;
+  }
+  #controls button:hover {
+    background-color: #ddd;
+  }
+
+  /* Overlay styles for countdown and instructions */
+  #overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0,0,0,0.8);
+    color: #fff;
+    font-size: 3em;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+  }
+  #countdown-number {
+    font-size: 5em;
+    margin: 20px 0;
+  }
+  #instructions {
+    max-width: 80%;
+    text-align: center;
+    font-size: 1.5em;
+    margin-top: 20px;
+  }
+</style>
+</head>
+<body>
+<h1>Electromagnetic Waves Maze</h1>
+<div id="description">Follow the hint to reach the correct wave type.</div>
+<div id="timer">Time: 20</div>
+<div id="maze"></div>
+<div id="score">Score: 0</div>
+
+<!-- Overlay for countdown and instructions -->
+<div id="overlay">
+  <div id="countdown-number">3</div>
+  <div id="instructions">Get ready! The level will start shortly.</div>
+</div>
+
+<!-- Question interface -->
+<div id="question-box">
+  <div id="question"></div>
+  <div class="choices" id="choices"></div>
+</div>
+
+<!-- Mobile controls -->
+<div id="controls">
+  <button id="upBtn">↑</button>
+  <div>
+    <button id="leftBtn">←</button>
+    <button id="downBtn">↓</button>
+    <button id="rightBtn">→</button>
+  </div>
+</div>
+
+<script>
+const mazeSize = 13;
+// Maze data
+const mazeData = [
+  [0,1,0,0,1,0,0,0,0,0,1,0,3],
+  [0,1,0,0,0,1,0,1,0,1,1,0,1],
+  [0,0,0,1,0,1,0,1,0,0,0,0,1],
+  [1,1,0,1,1,1,0,1,1,0,1,1,1],
+  [0,0,0,0,0,1,0,0,1,1,0,1,0],
+  [0,1,1,1,1,1,1,0,0,0,0,0,0],
+  [0,0,0,0,0,1,1,0,1,0,1,1,1],
+  [0,1,1,1,0,0,1,1,1,0,1,0,0],
+  [0,1,0,0,0,0,0,0,0,0,1,0,0],
+  [1,1,0,1,1,1,1,1,1,1,1,1,0],
+  [1,0,0,0,0,0,1,0,0,0,1,0,0],
+  [1,0,0,1,1,0,1,0,1,0,1,0,0],
+  [1,0,1,0,1,0,0,0,1,0,0,0,2],
+];
+
+const waveGoals = [
+  { name: "Radio and TV waves", description: "Used for wireless communication and broadcasting." },
+  { name: "Microwaves", description: "Used in microwave ovens and satellite communications." },
+  { name: "Infrared Waves", description: "Emitted by hot objects, used in night vision." },
+  { name: "Visible Light", description: "What we see; different colors have different wavelengths." },
+  { name: "Ultraviolet Waves", description: "Beyond violet; can cause skin tanning." },
+  { name: "X-Rays", description: "Penetrate flesh and are used in medical imaging." },
+  { name: "Gamma Rays", description: "High energy waves from nuclear reactions." }
+];
+
+let currentWaveGoal = null; 
+let correctGoalWave = null;
+let wrongGoalWave = null;
+let playerPos = {x: 0, y: 0};
+let score = 0;
+let awaitingAnswer = false;
+
+// --- Part 1: Inherit score from URL ---
+const passedScoreStr = new URLSearchParams(window.location.search).get('score');
+if (passedScoreStr !== null) {
+  score = parseInt(passedScoreStr, 10);
+}
+const scoreDiv = document.getElementById('score');
+scoreDiv.textContent = 'Score: ' + score;
+
+const mazeDiv = document.getElementById('maze');
+const descriptionDiv = document.getElementById('description');
+const timerDiv = document.getElementById('timer');
+
+let countdown = 20; // seconds
+let timerInterval = null;
+
+// --- New: Countdown setup ---
+const overlay = document.getElementById('overlay');
+const countdownNumber = document.getElementById('countdown-number');
+const instructionsDiv = document.getElementById('instructions');
+
+function startCountdown() {
+  let count = 3;
+  countdownNumber.textContent = count;
+  instructionsDiv.textContent = "Get ready! The level will start shortly.";
+  overlay.style.display='flex';
+
+  const interval = setInterval(() => {
+    count--;
+    if (count > 0) {
+      countdownNumber.textContent = count;
+    } else {
+      clearInterval(interval);
+      overlay.style.display='none';
+      startGame(); // start the game after countdown
+    }
+  }, 1000);
+}
+
+function startGame() {
+  setWaveGoal();
+  drawMaze();
+  startTimer();
+}
+
+// --- Existing functions (updateDescription, drawMaze, setWaveGoal, movePlayer, etc.) ---
+// (They're unchanged, so I won't re-list here, but ensure to call startGame() after countdown)
+function updateDescription(text) {
+  document.getElementById('description').textContent = text;
+}
+
+function drawMaze() {
+  mazeDiv.innerHTML = '';
+  for (let y=0; y<mazeSize; y++) {
+    for (let x=0; x<mazeSize; x++) {
+      const cellDiv = document.createElement('div');
+      cellDiv.className = 'cell';
+
+      const cellValue = mazeData[y][x];
+
+      if (cellValue===1) {
+        cellDiv.classList.add('wall');
+      } else if (cellValue===2) {
+        // Correct goal cell
+        cellDiv.className = 'cell goal correct-goal';
+        const label = document.createElement('div');
+        label.className='goal-label';
+        label.textContent = correctGoalWave ? correctGoalWave.name : 'Correct Goal';
+        cellDiv.appendChild(label);
+        const waves = document.createElement('div');
+        waves.className = 'waves';
+        for (let i=0; i<5; i++) {
+          const wave = document.createElement('div');
+          wave.className='wave';
+          waves.appendChild(wave);
+        }
+        cellDiv.appendChild(waves);
+      } else if (cellValue===3) {
+        // Wrong goal cell
+        cellDiv.className = 'cell goal wrong-goal';
+        const label = document.createElement('div');
+        label.className='goal-label';
+        label.textContent = wrongGoalWave ? wrongGoalWave.name : 'Wrong Goal';
+        cellDiv.appendChild(label);
+        const waves = document.createElement('div');
+        waves.className = 'waves';
+        for (let i=0; i<5; i++) {
+          const wave = document.createElement('div');
+          wave.className='wave';
+          waves.appendChild(wave);
+        }
+        cellDiv.appendChild(waves);
+      }
+
+      if (playerPos.x===x && playerPos.y===y) {
+        cellDiv.classList.add('player');
+      }
+      mazeDiv.appendChild(cellDiv);
+    }
+  }
+}
+
+function setWaveGoal() {
+  const index = Math.floor(Math.random() * waveGoals.length);
+  correctGoalWave = waveGoals[index];
+
+  let wrongIndex;
+  do {
+    wrongIndex = Math.floor(Math.random() * waveGoals.length);
+  } while (wrongIndex === index);
+  wrongGoalWave = waveGoals[wrongIndex];
+
+  currentWaveGoal = correctGoalWave;
+
+  let hintText = '';
+  switch (correctGoalWave.name) {
+    case "Radio and TV waves":
+      hintText = "This wave is used for wireless communication.";
+      break;
+    case "Microwaves":
+      hintText = "This wave heats food in a microwave oven.";
+      break;
+    case "Infrared Waves":
+      hintText = "This wave is emitted by hot objects and remote controls.";
+      break;
+    case "Visible Light":
+      hintText = "This wave is what allows us to see colors.";
+      break;
+    case "Ultraviolet Waves":
+      hintText = "This wave can cause skin tanning and is beyond violet.";
+      break;
+    case "X-Rays":
+      hintText = "This wave can penetrate flesh and is used in medical imaging.";
+      break;
+    case "Gamma Rays":
+      hintText = "This is the most energetic wave, emitted in nuclear reactions.";
+      break;
+    default:
+      hintText = "Identify the wave type.";
+  }
+
+  updateDescription(hintText);
+  startTimer();
+}
+
+// --- Part 2: Move player ---
+function movePlayer(dx, dy) {
+  if (awaitingAnswer) return;
+  const newX = playerPos.x + dx;
+  const newY = playerPos.y + dy;
+  if (newX<0 || newX>=mazeSize || newY<0 || newY>=mazeSize) return;
+  if (mazeData[newY][newX]===1) return;
+  playerPos.x = newX;
+  playerPos.y = newY;
+  drawMaze();
+  checkCell(newX, newY);
+  checkWin(newX, newY);
+}
+
+// --- Part 3: Check cell ---
+function checkCell(x,y) {
+  const cellValue = mazeData[y][x];
+  if (cellValue===2 || cellValue===3) {
+    presentGoalOptions(cellValue);
+  }
+}
+
+// --- Part 4: Present goal options ---
+function presentGoalOptions(cellValue) {
+  awaitingAnswer = true;
+  if (cellValue===2) {
+    alert('You reached the goal: ' + correctGoalWave.name);
+  } else {
+    alert('You reached the wrong goal: ' + wrongGoalWave.name);
+  }
+  checkWin(playerPos.x, playerPos.y);
+  closeQuestion();
+}
+
+// --- Part 5: Check win condition ---
+function checkWin(x,y) {
+  if (x===mazeSize-1 && y===mazeSize-1) {
+    score += 1;
+    scoreDiv.textContent = `Score: ${score}`;
+    // Update URL to inherit score for next level
+    const currentUrl = new URL(window.location.href);
+    currentUrl.searchParams.set('score', score);
+    window.history.replaceState({}, '', currentUrl.toString());
+    // Proceed to next wave
+    setWaveGoal();
+    drawMaze();
+    startTimer();
+  }
+  // Check game over condition: reach bottom-right cell
+  if (x===12 && y===12) {
+    endGame();
+  }
+}
+
+// --- Part 6: Close question ---
+function closeQuestion() {
+  document.getElementById('question-box').style.display='none';
+  awaitingAnswer=false;
+}
+
+// --- Part 7: Timer functions ---
+function startTimer() {
+  clearInterval(timerInterval);
+  countdown = 20;
+  timerDiv.textContent = 'Time: ' + countdown;
+  timerInterval = setInterval(() => {
+    countdown--;
+    if (countdown <= 0) {
+      clearInterval(timerInterval);
+      // --- When time runs out, move to next wave ---
+      alert('Time is up! Moving to the next wave.');
+      setWaveGoal();
+      drawMaze();
+      startTimer();
+    } else {
+      timerDiv.textContent = 'Time: ' + countdown;
+    }
+  }, 1000);
+}
+
+function endGame() {
+  alert('Game Over! Your final score is ' + score);
+  window.location.href = `score.html?score=${score}`;
+}
+
+// --- Event listeners for controls ---
+document.addEventListener('keydown', (e)=>{
+  if (e.key==='ArrowUp') movePlayer(0,-1);
+  if (e.key==='ArrowDown') movePlayer(0,1);
+  if (e.key==='ArrowLeft') movePlayer(-1,0);
+  if (e.key==='ArrowRight') movePlayer(1,0);
+});
+
+// Mobile controls
+document.getElementById('upBtn').addEventListener('click', ()=> movePlayer(0, -1));
+document.getElementById('downBtn').addEventListener('click', ()=> movePlayer(0, 1));
+document.getElementById('leftBtn').addEventListener('click', ()=> movePlayer(-1, 0));
+document.getElementById('rightBtn').addEventListener('click', ()=> movePlayer(1, 0));
+
+// --- Initialization with countdown ---
+startCountdown();
+
+</script>
+</body>
+</html>
