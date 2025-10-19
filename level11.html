@@ -234,28 +234,7 @@
     score = parseInt(passedScore, 10);
   }
 
-  let selectedWaveId = null;
-  const totalQuestions = document.querySelectorAll('.desc-box').length;
-
-  // Timer variables
-  let timeRemaining = 30; // seconds
-  let timerInterval = null;
-
-  // Start the timer
-  function startTimer() {
-    document.getElementById('timer').textContent = timeRemaining;
-    timerInterval = setInterval(() => {
-      timeRemaining--;
-      document.getElementById('timer').textContent = timeRemaining;
-      if (timeRemaining <= 0) {
-        clearInterval(timerInterval);
-        alert("Time's up!");
-        checkAnswers();
-      }
-    }, 1000);
-  }
-
-  // Initialize everything on DOM load
+  // Initialize score display
   document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('score').textContent = score;
     startTimer();
@@ -276,6 +255,26 @@
       });
     });
   });
+
+  let selectedWaveId = null;
+  const totalQuestions = document.querySelectorAll('.desc-box').length;
+
+  // Timer variables
+  let timeRemaining = 30; // seconds
+  let timerInterval = null;
+
+  // Start the timer
+  function startTimer() {
+    document.getElementById('timer').textContent = timeRemaining;
+    timerInterval = setInterval(() => {
+      timeRemaining--;
+      document.getElementById('timer').textContent = timeRemaining;
+      if (timeRemaining <= 0) {
+        clearInterval(timerInterval);
+        checkAnswers();
+      }
+    }, 1000);
+  }
 
   function selectWave(waveId) {
     if (selectedWaveId) {
@@ -324,7 +323,7 @@
         removeBtn.style.marginLeft = "10px";
         removeBtn.onclick = () => {
           zone.removeChild(placedWave);
-          waveEl.style.display = "block"; // restore wave
+          waveEl.style.display = "block";
         };
         placedWave.appendChild(removeBtn);
 
@@ -347,9 +346,9 @@
   function checkAnswers() {
     const zones = document.querySelectorAll('.desc-box');
 
-    // Reset score before checking
-    score = 0;
+    let correctCount = 0;
 
+    // Check each zone
     zones.forEach(zone => {
       const answer = zone.dataset.answer;
       const placedWaveDiv = zone.querySelector('.placed-wave');
@@ -357,7 +356,7 @@
         const waveText = placedWaveDiv.firstChild.textContent.trim();
         if (waveText === answer) {
           zone.style.backgroundColor = "#A5D6A7"; // green
-          score++;
+          correctCount++;
         } else {
           zone.style.backgroundColor = "#EF9A9A"; // red
         }
@@ -366,7 +365,22 @@
       }
     });
 
-    // Save the score to URL parameter for inheritance later
+    // Assign points based on correct count
+    let points = 0;
+    if (correctCount >= 6) {
+      points = 3;
+    } else if (correctCount >= 4) {
+      points = 2;
+    } else if (correctCount >= 2) {
+      points = 1;
+    } else {
+      points = 0;
+    }
+
+    // Add points to total score
+    score += points;
+
+    // Save score in URL for inheritance
     const currentUrl = new URL(window.location.href);
     currentUrl.searchParams.set('score', score);
     window.history.replaceState({}, '', currentUrl.toString());
@@ -374,11 +388,17 @@
     // Update display
     document.getElementById('score').textContent = score;
 
-    if (score === zones.length) {
-      alert("Great job! All answers are correct!");
-      // Redirect to next level with score in URL
-      // Replace 'nextlevel.html' with your actual next level URL
-      window.location.href = 'level12.html?score=' + score;
+    // Determine if all answers are correct
+    if (correctCount === zones.length) {
+      // All correct, redirect immediately after 1 second
+      setTimeout(() => {
+        window.location.href = 'level12.html?score=' + score;
+      }, 1000);
+    } else {
+      // Not all correct, still redirect after 1 second
+      setTimeout(() => {
+        window.location.href = 'level12.html?score=' + score;
+      }, 1000);
     }
   }
 </script>
