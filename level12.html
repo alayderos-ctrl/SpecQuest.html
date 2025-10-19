@@ -183,6 +183,15 @@
 <div id="game-container"></div>
 
 <script>
+// --- Part 1: Inherit score from URL ---
+const passedScore = new URLSearchParams(window.location.search).get('score');
+let score = 0;
+if (passedScore !== null && !isNaN(parseInt(passedScore, 10))) {
+  score = parseInt(passedScore, 10);
+}
+const scoreDisplay = document.getElementById('score');
+scoreDisplay.textContent = 'Score: ' + score;
+
 const scientists = [
   {
     name: "Andre-Marie Ampere",
@@ -219,15 +228,7 @@ const descriptions = [
   "Showed how a current carrying wire behaves like a magnet."
 ];
 
-// --- Part 1: Inherit score from URL ---
-const passedScore = new URLSearchParams(window.location.search).get('score');
-let score = 0;
-if (passedScore !== null && !isNaN(parseInt(passedScore, 10))) {
-  score = parseInt(passedScore, 10);
-}
-const scoreDisplay = document.getElementById('score');
-scoreDisplay.textContent = 'Score: ' + score;
-
+// --- Part 2: Initialize game variables ---
 let firstCard = null;
 let secondCard = null;
 
@@ -263,7 +264,7 @@ function startGame() {
   createCards();
 }
 
-// --- Timer ---
+// --- Timer functions ---
 function startTimer() {
   updateTimerDisplay();
   timerInterval = setInterval(() => {
@@ -377,7 +378,7 @@ function checkMatch() {
       clearInterval(timerInterval);
       // Wait for a moment before redirecting
       setTimeout(() => {
-        // Redirect to level13.html passing the score
+        // Redirect to next level with score
         window.location.href = 'level13.html?score=' + score;
       }, 1000);
     }
