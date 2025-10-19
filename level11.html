@@ -220,10 +220,10 @@ const descriptions = [
 ];
 
 // --- Part 1: Inherit score from URL parameter 'level11score' ---
-const passedScore = new URLSearchParams(window.location.search).get('level11score');
+const passedScoreParam = new URLSearchParams(window.location.search).get('level11score');
 let score = 0;
-if (passedScore !== null && !isNaN(parseInt(passedScore, 10))) {
-  score = parseInt(passedScore, 10);
+if (passedScoreParam !== null && !isNaN(parseInt(passedScoreParam, 10))) {
+  score = parseInt(passedScoreParam, 10);
 }
 const scoreDisplay = document.getElementById('score');
 scoreDisplay.textContent = 'Score: ' + score;
@@ -363,7 +363,7 @@ function checkMatch() {
   if (isMatch) {
     score++;
     scoreDisplay.textContent = 'Score: ' + score;
-    // Save score to URL with 'level11score' parameter
+    // Save updated score to URL parameter
     const currentUrl = new URL(window.location.href);
     currentUrl.searchParams.set('level11score', score);
     window.history.replaceState({}, '', currentUrl.toString());
@@ -377,15 +377,14 @@ function checkMatch() {
       clearInterval(timerInterval);
       // Wait before redirecting
       setTimeout(() => {
-        // Redirect to level13.html passing the score with 'level11score'
         window.location.href = 'level13.html?level11score=' + score;
       }, 1000);
     }
   } else {
     document.getElementById('message').textContent = 'Try Again!';
     setTimeout(() => {
-      firstCard.classList.remove('flipped');
-      secondCard.classList.remove('flipped');
+      if (firstCard) firstCard.classList.remove('flipped');
+      if (secondCard) secondCard.classList.remove('flipped');
       firstCard = null;
       secondCard = null;
       document.getElementById('message').textContent = '';
